@@ -1,5 +1,5 @@
 // Admin Dashboard controller
-import { db, configured, auth } from "./firebase.js";
+import { db, configured, auth, CUSTOM_DISPLAY_DOMAIN } from "./firebase.js";
 import { 
     collection, 
     onSnapshot, 
@@ -161,7 +161,7 @@ function renderUrlsTable(filterQuery = "") {
             createdStr = formatTimeAgo(date);
         }
         
-        const shortUrl = `${window.location.host}/#${url.shortCode}`;
+        const shortUrl = `${CUSTOM_DISPLAY_DOMAIN || window.location.host}/${url.shortCode}`;
         const activeBadge = url.active !== false 
             ? `<span class="badge badge-success">Active</span>`
             : `<span class="badge badge-danger">Disabled</span>`;
@@ -255,9 +255,9 @@ async function showAnalytics(code) {
                 <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Short Link</div>
                 <div class="d-flex justify-between align-center">
                     <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; color: var(--accent); font-size: 15px;">
-                        ${window.location.host}/#${code}
+                        ${CUSTOM_DISPLAY_DOMAIN || window.location.host}/${code}
                     </span>
-                    <button class="btn btn-secondary" onclick="window.copyToClipboard('${window.location.host}/#${code}');" style="padding: 4px 8px; font-size: 11px;">
+                    <button class="btn btn-secondary" onclick="window.copyToClipboard('${CUSTOM_DISPLAY_DOMAIN || window.location.host}/${code}');" style="padding: 4px 8px; font-size: 11px;">
                         Copy
                     </button>
                 </div>
@@ -367,7 +367,7 @@ function openViewModal(code) {
     
     document.getElementById("view-modal-title").innerText = `/${code} Details`;
     
-    const shortUrl = `${window.location.host}/#${code}`;
+    const shortUrl = `${CUSTOM_DISPLAY_DOMAIN || window.location.host}/${code}`;
     document.getElementById("view-short-url").innerText = shortUrl;
     document.getElementById("view-long-url").innerText = urlData.longUrl;
     document.getElementById("view-long-url").href = urlData.longUrl;
@@ -380,40 +380,7 @@ function openViewModal(code) {
     downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
     
     newDownloadBtn.addEventListener("click", () => {
-        const qrImg = document.querySelector("#view-qrcode img");
-        if (qrImg) {
-            try {
-                const base64Data = qrImg.src;
-                const parts = base64Data.split(';base64,');
-                const contentType = parts[0].split(':')[1];
-                const raw = window.atob(parts[1]);
-                const rawLength = raw.length;
-                const uInt8Array = new Uint8Array(rawLength);
-                for (let i = 0; i < rawLength; ++i) {
-                    uInt8Array[i] = raw.charCodeAt(i);
-                }
-                const blob = new Blob([uInt8Array], { type: contentType });
-                const blobUrl = URL.createObjectURL(blob);
-
-                const link = document.createElement("a");
-                link.href = blobUrl;
-                link.download = `qr_${code}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-            } catch (err) {
-                console.error("Error downloading QR:", err);
-                const link = document.createElement("a");
-                link.href = qrImg.src;
-                link.download = `qr_${code}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        } else {
-            showToast("QR code image not loaded yet.", "warning");
-        }
+        showToast("QR code downloading is coming soon!", "info");
     });
 
     overlay.classList.add("active");

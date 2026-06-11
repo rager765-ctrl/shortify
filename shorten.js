@@ -22,7 +22,7 @@ export function isValidUrl(string) {
 }
 
 // Generate a random short code
-export function generateRandomCode(length = 6) {
+export function generateRandomCode(length = 5) {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
     for (let i = 0; i < length; i++) {
@@ -78,7 +78,7 @@ export async function createShortLink(longUrl, customAlias = null) {
         let isUnique = false;
         let attempts = 0;
         while (!isUnique && attempts < 10) {
-            shortCode = generateRandomCode(6);
+            shortCode = generateRandomCode(5);
             const docRef = doc(db, "urls", shortCode);
             const docSnap = await getDoc(docRef);
             if (!docSnap.exists()) {

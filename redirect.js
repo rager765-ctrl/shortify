@@ -91,7 +91,7 @@ export async function checkRedirect() {
             }
 
             // Update page header info & metadata preview on redirect
-            document.title = `Redirecting to ${domain} | Shortify`;
+            document.title = `Redirecting to ${domain} | Enly`;
             
             const metaDesc = document.getElementById("meta-description");
             if (metaDesc) metaDesc.setAttribute("content", `Redirecting you to ${targetUrl}.`);
@@ -100,7 +100,7 @@ export async function checkRedirect() {
             if (ogTitle) ogTitle.setAttribute("content", `Redirecting to ${domain}`);
             
             const ogDesc = document.getElementById("og-description");
-            if (ogDesc) ogDesc.setAttribute("content", `Shortened URL redirection to ${targetUrl} via Shortify.`);
+            if (ogDesc) ogDesc.setAttribute("content", `Shortened URL redirection to ${targetUrl} via Enly.`);
             
             // Check if active
             if (data.active !== false) {

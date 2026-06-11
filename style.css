@@ -1,4 +1,4 @@
-/* Design System & Styling for Shortify (Premium SaaS URL Shortener) */
+/* Design System & Styling for Enly (Premium SaaS URL Shortener) */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
@@ -437,6 +437,12 @@ header .container {
 .action-buttons {
     display: flex;
     gap: 10px;
+}
+
+.action-buttons .btn {
+    height: 44px;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 
 /* QR Code Section */

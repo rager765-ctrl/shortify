@@ -66,6 +66,14 @@ if (configured) {
 
 export { app, auth, db, configured, activeConfig };
 
+// CUSTOM DISPLAY DOMAIN CONFIGURATION
+// To hide your Vercel URL, set this to your custom domain (e.g. "enly.li").
+// When set, the system will generate, copy, and link to this domain.
+// Note: You must add this custom domain to your Vercel project settings so it points to your app.
+// If set to null, the app will dynamically fall back to the current browser domain (window.location.host).
+export const CUSTOM_DISPLAY_DOMAIN = null;
+
+
 // Helper to save dynamic configuration via the UI setup wizard
 export function saveFirebaseConfig(newConfig) {
     if (isConfigured(newConfig)) {

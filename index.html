@@ -14,14 +14,14 @@
             }
         })();
     </script>
-    <title>Shortify | Premium URL Shortener</title>
+    <title>Enly | Premium URL Shortener</title>
     <meta name="description" id="meta-description" content="Shorten your links, customize your aliases, track detailed analytics, and generate dynamic QR codes.">
-    <meta property="og:title" id="og-title" content="Shortify | Premium URL Shortener">
+    <meta property="og:title" id="og-title" content="Enly | Premium URL Shortener">
     <meta property="og:description" id="og-description" content="Shorten your links, customize your aliases, track detailed analytics, and generate dynamic QR codes.">
     <meta property="og:image" content="icon.svg">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <meta name="theme-color" content="#d97706">
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
@@ -46,7 +46,7 @@
         <div class="container">
             <a href="index.html" class="logo">
                 <div class="logo-icon">🔗</div>
-                <span>Shortify</span>
+                <span>Enly</span>
             </a>
             <nav class="nav-links">
                 <a href="dashboard.html" class="btn btn-secondary">Admin Dashboard</a>
@@ -60,7 +60,7 @@
         <!-- Redirect Loading Overlay (Hidden by default, shown during redirect) -->
         <div id="redirect-loading" style="display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 0;">
             <div class="spinner" style="width: 48px; height: 48px; border: 4px solid rgba(217, 119, 6, 0.15); border-top-color: var(--accent); margin-bottom: 25px;"></div>
-            <h2 style="font-size: 28px; margin-bottom: 10px;">Navigating through Shortify</h2>
+            <h2 style="font-size: 28px; margin-bottom: 10px;">Navigating through Enly</h2>
             <p id="redirect-status-message" style="color: var(--text-secondary); font-size: 16px;">
                 Checking short code <strong id="redirect-code-display" style="color: var(--primary);">...</strong>
             </p>
@@ -151,7 +151,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2026 Shortify URL Shortener. Built by Mr. Rager & 3Strong Inc.</p>
+            <p>&copy; 2026 Enly URL Shortener. Built by Mr. Rager & 3Strong Inc.</p>
         </div>
     </footer>
 
@@ -160,6 +160,7 @@
         import { checkRedirect } from "./redirect.js";
         import { createShortLink, generateQRCode } from "./shorten.js";
         import { showToast } from "./auth.js";
+        import { CUSTOM_DISPLAY_DOMAIN } from "./firebase.js";
 
         document.addEventListener("DOMContentLoaded", async () => {
             // 1. Process routing (redirection) if a short code path is detected
@@ -217,7 +218,7 @@
                     const result = await createShortLink(longUrl, customAlias);
                     
                     // Display results
-                    currentShortUrl = `${window.location.host}/#${result.shortCode}`;
+                    currentShortUrl = `${CUSTOM_DISPLAY_DOMAIN || window.location.host}/${result.shortCode}`;
                     shortenedUrlText.innerText = currentShortUrl;
                     originalUrlText.innerText = result.longUrl;
                     
@@ -289,40 +290,7 @@
 
             // Download QR
             downloadQrAction.addEventListener("click", () => {
-                const img = document.querySelector("#qrcode img");
-                if (img) {
-                    try {
-                        const base64Data = img.src;
-                        const parts = base64Data.split(';base64,');
-                        const contentType = parts[0].split(':')[1];
-                        const raw = window.atob(parts[1]);
-                        const rawLength = raw.length;
-                        const uInt8Array = new Uint8Array(rawLength);
-                        for (let i = 0; i < rawLength; ++i) {
-                            uInt8Array[i] = raw.charCodeAt(i);
-                        }
-                        const blob = new Blob([uInt8Array], { type: contentType });
-                        const blobUrl = URL.createObjectURL(blob);
-
-                        const link = document.createElement("a");
-                        link.href = blobUrl;
-                        link.download = `qrcode_shortify.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-                    } catch (err) {
-                        console.error("Error downloading QR:", err);
-                        const link = document.createElement("a");
-                        link.href = img.src;
-                        link.download = `qrcode_shortify.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
-                } else {
-                    showToast("QR image not ready", "warning");
-                }
+                showToast("QR code downloading is coming soon!", "info");
             });
         }
     </script>
