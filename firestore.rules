@@ -35,8 +35,9 @@ service cloud.firestore {
     match /urls/{shortCode} {
       // Anyone can look up a short code for redirection, and anyone can shorten a new link
       allow read, create: if true;
-      // Only authenticated administrators can edit or delete short codes
-      allow update, delete: if isAdmin();
+      // Allow anyone to update the clicks counter, but restrict other modifications and deletes to admins
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clicks']) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     // Click analytics tracking logs

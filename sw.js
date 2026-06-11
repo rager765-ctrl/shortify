@@ -1,4 +1,4 @@
-const CACHE_NAME = "shortify-v2";
+const CACHE_NAME = "shortify-v3";
 const ASSETS = [
     "./",
     "./index.html",
