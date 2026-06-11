@@ -196,9 +196,6 @@
                     qrToggleBtn.innerText = "Show QR Code";
                     
                     showToast("Short link created successfully!");
-                    
-                    // Generate the QR Code in memory, ready if they click show
-                    generateQRCode("qrcode", currentShortUrl);
 
                 } catch (err) {
                     console.error("Shortening failure:", err);
@@ -208,18 +205,47 @@
                 }
             });
 
-            // Copy Link Action
+            // Copy Link Action with robust fallback for non-secure context
             copyBtn.addEventListener("click", () => {
                 if (!currentShortUrl) return;
-                navigator.clipboard.writeText(currentShortUrl);
-                showToast("Copied to clipboard!");
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(currentShortUrl)
+                        .then(() => showToast("Copied to clipboard!"))
+                        .catch(() => fallbackCopyText(currentShortUrl));
+                } else {
+                    fallbackCopyText(currentShortUrl);
+                }
             });
+
+            function fallbackCopyText(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast("Copied to clipboard!");
+                } catch (err) {
+                    console.error("Fallback copy failed:", err);
+                    showToast("Failed to copy link", "error");
+                }
+                document.body.removeChild(textArea);
+            }
 
             // Toggle QR Panel
             qrToggleBtn.addEventListener("click", () => {
                 if (qrResultContainer.style.display === "none") {
                     qrResultContainer.style.display = "flex";
                     qrToggleBtn.innerText = "Hide QR Code";
+                    // Generate on display to avoid WebKit dimension measurement bug
+                    if (currentShortUrl) {
+                        generateQRCode("qrcode", currentShortUrl);
+                    }
                 } else {
                     qrResultContainer.style.display = "none";
                     qrToggleBtn.innerText = "Show QR Code";

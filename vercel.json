@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/((?!style\\.css|auth\\.js|firebase\\.js|dashboard\\.js|redirect\\.js|shorten\\.js|african_heritage_banner\\.png|index\\.html|dashboard\\.html|login\\.html|favicon\\.ico).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -540,6 +540,42 @@ header .container {
         border-radius: var(--radius-md);
         padding: 12px;
     }
+    .result-url-display {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 18px;
+    }
+    .result-url-display > div {
+        text-align: center;
+    }
+    .action-buttons {
+        flex-direction: row;
+        gap: 10px;
+        justify-content: center;
+    }
+    .action-buttons .btn {
+        flex: 1;
+        font-size: 12.5px;
+        padding: 10px;
+    }
+    .original-url-preview {
+        max-width: 100%;
+        margin-top: 4px;
+    }
+    .toast-container {
+        bottom: 20px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        align-items: center;
+    }
+    .toast {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 .table-header {

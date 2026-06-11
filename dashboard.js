@@ -252,7 +252,7 @@ async function showAnalytics(code) {
                     <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; color: var(--accent); font-size: 15px;">
                         ${window.location.origin}/${code}
                     </span>
-                    <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${window.location.origin}/${code}'); alert('Link copied!');" style="padding: 4px 8px; font-size: 11px;">
+                    <button class="btn btn-secondary" onclick="window.copyToClipboard('${window.location.origin}/${code}');" style="padding: 4px 8px; font-size: 11px;">
                         Copy
                     </button>
                 </div>
@@ -368,9 +368,6 @@ function openViewModal(code) {
     document.getElementById("view-long-url").href = urlData.longUrl;
     document.getElementById("view-clicks").innerText = (urlData.clicks || 0).toLocaleString();
     
-    // Generate QR
-    generateQRCode("view-qrcode", shortUrl);
-    
     // Download QR listener
     const downloadBtn = document.getElementById("download-qr-btn");
     // Replace listener
@@ -392,6 +389,11 @@ function openViewModal(code) {
     });
 
     overlay.classList.add("active");
+
+    // Generate QR after modal display animation finishes to ensure proper rendering context
+    setTimeout(() => {
+        generateQRCode("view-qrcode", shortUrl);
+    }, 50);
 }
 
 function openEditModal(code) {
@@ -508,8 +510,7 @@ function setupDashboardEvents() {
     if (copyDetailsBtn) {
         copyDetailsBtn.addEventListener("click", () => {
             const shortUrl = document.getElementById("view-short-url").innerText;
-            navigator.clipboard.writeText(shortUrl);
-            showToast("Short URL copied!");
+            window.copyToClipboard(shortUrl);
         });
     }
 }
@@ -534,4 +535,35 @@ function formatTimeAgo(date) {
     if (interval > 1) return Math.floor(interval) + " minutes ago";
     if (seconds < 10) return "Just now";
     return Math.floor(seconds) + " seconds ago";
+}
+
+// Expose copy to clipboard helper globally
+window.copyToClipboard = function(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => showToast("Copied to clipboard!"))
+            .catch(() => fallbackCopyText(text));
+    } else {
+        fallbackCopyText(text);
+    }
+};
+
+function fallbackCopyText(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showToast("Copied to clipboard!");
+    } catch (err) {
+        console.error("Fallback copy failed:", err);
+        showToast("Failed to copy link", "error");
+    }
+    document.body.removeChild(textArea);
 }
