@@ -49,7 +49,7 @@
                 <span>Enly</span>
             </a>
             <nav class="nav-links">
-                <a href="dashboard.html" class="btn btn-secondary">Admin Dashboard</a>
+                <a href="login.html" class="btn btn-secondary">Admin Dashboard</a>
             </nav>
         </div>
     </header>
@@ -122,7 +122,7 @@
                             </div>
                             <div class="action-buttons">
                                 <button class="btn btn-secondary" id="copy-btn">Copy Link</button>
-                                <button class="btn btn-secondary" id="qr-toggle-btn">Show QR Code</button>
+                                <button class="btn btn-secondary" id="qr-toggle-btn"><span class="qr-btn-prefix">Show </span>QR<span class="qr-btn-suffix"> Code</span></button>
                                 <a class="btn btn-primary" id="visit-btn" target="_blank" style="text-decoration: none;">Visit Link</a>
                             </div>
                         </div>
@@ -275,16 +275,17 @@
 
             // Toggle QR Panel
             qrToggleBtn.addEventListener("click", () => {
+                const prefixSpan = qrToggleBtn.querySelector(".qr-btn-prefix");
                 if (qrResultContainer.style.display === "none") {
                     qrResultContainer.style.display = "flex";
-                    qrToggleBtn.innerText = "Hide QR Code";
+                    if (prefixSpan) prefixSpan.innerText = "Hide ";
                     // Generate on display to avoid WebKit dimension measurement bug
                     if (currentShortUrl) {
                         generateQRCode("qrcode", `${window.location.protocol}//${currentShortUrl}`);
                     }
                 } else {
                     qrResultContainer.style.display = "none";
-                    qrToggleBtn.innerText = "Show QR Code";
+                    if (prefixSpan) prefixSpan.innerText = "Show ";
                 }
             });
 

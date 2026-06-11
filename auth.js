@@ -73,7 +73,17 @@ export function initAuthGuard(pageType) {
         } else {
             // Not logged in
             if (pageType === "dashboard") {
-                window.location.href = "login.html";
+                showToast("Please authenticate first. Redirecting to login...", "warning");
+                
+                // Immediately redirect to auth if they click the toggle or anything else during the glimpse
+                const handleImmediateRedirect = () => {
+                    window.location.href = "login.html";
+                };
+                document.body.addEventListener("click", handleImmediateRedirect);
+                
+                setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 2500);
             }
         }
     });
