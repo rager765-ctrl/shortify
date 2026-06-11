@@ -203,7 +203,7 @@
                     const result = await createShortLink(longUrl, customAlias);
                     
                     // Display results
-                    currentShortUrl = `${window.location.origin}/?c=${result.shortCode}`;
+                    currentShortUrl = `${window.location.host}/${result.shortCode}`;
                     shortenedUrlText.innerText = currentShortUrl;
                     originalUrlText.innerText = result.longUrl;
                     
@@ -260,7 +260,7 @@
                     qrToggleBtn.innerText = "Hide QR Code";
                     // Generate on display to avoid WebKit dimension measurement bug
                     if (currentShortUrl) {
-                        generateQRCode("qrcode", currentShortUrl);
+                        generateQRCode("qrcode", `${window.location.protocol}//${currentShortUrl}`);
                     }
                 } else {
                     qrResultContainer.style.display = "none";
