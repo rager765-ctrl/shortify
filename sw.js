@@ -1,4 +1,4 @@
-const CACHE_NAME = "shortify-v3";
+const CACHE_NAME = "shortify-v4";
 const ASSETS = [
     "./",
     "./index.html",
@@ -13,7 +13,11 @@ const ASSETS = [
     "./redirect.js",
     "./african_heritage_banner.png",
     "./icon.svg",
-    "./manifest.json"
+    "./manifest.json",
+    "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+    "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+    "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+    "https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"
 ];
 
 // Install Event
@@ -44,11 +48,12 @@ self.addEventListener("activate", (e) => {
 
 // Fetch Event
 self.addEventListener("fetch", (e) => {
-    // Skip Firebase auth/firestore endpoints to prevent caching dynamic calls
+    // Only handle GET requests and skip live Firebase/Google database and auth API calls
     if (
-        e.request.url.includes("googleapis.com") || 
-        e.request.url.includes("firebase") ||
-        e.request.method !== "GET"
+        e.request.method !== "GET" ||
+        e.request.url.includes("firestore.googleapis.com") ||
+        e.request.url.includes("identitytoolkit.googleapis.com") ||
+        e.request.url.includes("securetoken.googleapis.com")
     ) {
         return;
     }
