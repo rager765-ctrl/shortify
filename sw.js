@@ -1,4 +1,4 @@
-const CACHE_NAME = "shortify-v9";
+const CACHE_NAME = "shortify-v10";
 const ASSETS = [
     "./",
     "./index.html",
@@ -66,10 +66,12 @@ self.addEventListener("fetch", (e) => {
         const isStaticFile = path.includes(".") || reservedPaths.some(p => path.startsWith(p));
 
         if (path && !isStaticFile) {
-            // Serve index.html from cache to handle the short code redirection client-side
+            // Serve index.html from cache or fallback to fetching index.html from the network
             e.respondWith(
                 caches.match("./index.html").then((cachedIndex) => {
-                    return cachedIndex || fetch(e.request);
+                    return cachedIndex || fetch("./index.html");
+                }).catch(() => {
+                    return fetch("./index.html");
                 })
             );
             return;
@@ -87,6 +89,8 @@ self.addEventListener("fetch", (e) => {
                 }).catch(() => {});
                 return cachedResponse;
             }
+            return fetch(e.request);
+        }).catch(() => {
             return fetch(e.request);
         })
     );
