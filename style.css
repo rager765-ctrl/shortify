@@ -9,15 +9,15 @@
     --bg-tertiary: #f8fafc;
     
     --card-bg: #ffffff;
-    --card-border: rgba(0, 0, 0, 0.06);
-    --card-border-hover: rgba(0, 0, 0, 0.12);
+    --card-border: transparent;
+    --card-border-hover: transparent;
     
     --primary: #000000;
     --primary-hover: #1e293b;
     --primary-glow: rgba(0, 0, 0, 0.03);
     
-    --accent: #4f46e5;
-    --accent-glow: rgba(79, 70, 229, 0.08);
+    --accent: #d97706;
+    --accent-glow: rgba(217, 119, 6, 0.08);
     
     --success: #10b981;
     --success-glow: rgba(16, 185, 129, 0.08);
@@ -234,16 +234,30 @@ header .container {
 }
 
 .btn-secondary {
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.04);
     color: var(--text-primary);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    border: none;
+    box-shadow: none;
 }
 
 .btn-secondary:hover {
-    background: var(--bg-tertiary);
-    border-color: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
+}
+
+.btn-accent {
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 15px var(--accent-glow);
+    transition: var(--transition-normal);
+}
+
+.btn-accent:hover {
+    background: var(--accent);
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--accent-glow);
 }
 
 .btn-danger {
@@ -357,7 +371,7 @@ header .container {
 .form-control {
     width: 100%;
     background: #f8fafc;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid transparent;
     color: var(--text-primary);
     padding: 11px 14px;
     border-radius: var(--radius-md);
@@ -370,7 +384,7 @@ header .container {
 .form-control:focus {
     border-color: var(--accent);
     background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
 /* Result Section */
@@ -434,7 +448,7 @@ header .container {
     background: #f8fafc;
     border-radius: var(--radius-md);
     padding: 20px;
-    border: 1px dashed rgba(0, 0, 0, 0.08);
+    border: none;
 }
 
 #qrcode {
@@ -442,7 +456,7 @@ header .container {
     padding: 12px;
     border-radius: var(--radius-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.03);
+    border: none;
 }
 
 /* Admin Dashboard CSS */
@@ -672,7 +686,8 @@ tr:last-child td {
     height: 300px;
     color: var(--text-muted);
     text-align: center;
-    border: 1px dashed rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.015);
+    border: none;
     border-radius: var(--radius-xl);
 }
 
@@ -699,7 +714,7 @@ tr:last-child td {
     background: #f8fafc;
     border-radius: var(--radius-sm);
     padding: 10px 14px;
-    border: 1px solid rgba(0, 0, 0, 0.02);
+    border: none;
 }
 
 .click-time {
@@ -800,7 +815,7 @@ tr:last-child td {
     padding: 12px 18px;
     border-radius: var(--radius-md);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0,0,0,0.02);
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: none;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -922,9 +937,9 @@ footer::after {
 .spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.25);
     border-radius: 50%;
-    border-top-color: var(--primary);
+    border-top-color: #ffffff;
     animation: spin 0.8s linear infinite;
 }
 
@@ -979,4 +994,25 @@ footer p {
     text-align: center;
     margin: 0 auto;
     width: 100%;
+}
+
+/* Toggle Switch Styles */
+.switch-container input:checked + .slider {
+    background-color: var(--accent) !important;
+}
+
+.switch-container .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.switch-container input:checked + .slider:before {
+    transform: translateX(22px);
 }

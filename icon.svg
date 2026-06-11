@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="50%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1c1917" />
+      <stop offset="100%" stop-color="#0c0a09" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle with subtle premium gradient -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg-grad)" stroke="#d97706" stroke-width="8" />
+  
+  <!-- African Geometric Pattern Accent -->
+  <path d="M 256,16 L 256,496" stroke="rgba(217, 119, 6, 0.15)" stroke-width="4" stroke-dasharray="10 10" />
+  <path d="M 16,256 L 496,256" stroke="rgba(217, 119, 6, 0.15)" stroke-width="4" stroke-dasharray="10 10" />
+  
+  <!-- Outer glowing rings -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="rgba(217, 119, 6, 0.2)" stroke-width="2" />
+  <circle cx="256" cy="256" r="180" fill="none" stroke="rgba(220, 38, 38, 0.1)" stroke-width="2" />
+  <circle cx="256" cy="256" r="220" fill="none" stroke="rgba(22, 163, 74, 0.1)" stroke-width="2" />
+  
+  <!-- Premium Stylized Link Icon in Gold -->
+  <g transform="translate(100, 100) scale(0.6)">
+    <!-- First Loop -->
+    <path d="M 172.5 76.5 C 132.5 36.5, 67.5 36.5, 27.5 76.5 C -12.5 116.5, -12.5 181.5, 27.5 221.5 L 97.5 291.5 C 137.5 331.5, 202.5 331.5, 242.5 291.5 C 255.5 278.5, 264.5 262.5, 269.5 245.5 L 219.5 245.5 C 215.5 251.5, 210.5 256.5, 207.5 259.5 C 182.5 284.5, 142.5 284.5, 117.5 259.5 L 47.5 189.5 C 22.5 164.5, 22.5 124.5, 47.5 99.5 C 72.5 74.5, 112.5 74.5, 137.5 99.5 L 172.5 134.5 Z" fill="url(#gold-grad)" />
+    <!-- Center Link Bar -->
+    <rect x="180" y="180" width="152" height="152" rx="20" transform="rotate(-45 256 256)" fill="url(#gold-grad)" opacity="0.9" />
+    <!-- Second Loop -->
+    <path d="M 339.5 377.5 C 379.5 417.5, 444.5 417.5, 484.5 377.5 C 524.5 337.5, 524.5 272.5, 484.5 232.5 L 414.5 162.5 C 374.5 122.5, 309.5 122.5, 269.5 162.5 C 256.5 175.5, 247.5 191.5, 242.5 208.5 L 292.5 208.5 C 296.5 202.5, 301.5 197.5, 304.5 194.5 C 329.5 169.5, 369.5 169.5, 394.5 194.5 L 464.5 264.5 C 489.5 289.5, 489.5 329.5, 464.5 354.5 C 439.5 379.5, 399.5 379.5, 374.5 354.5 L 339.5 319.5 Z" fill="url(#gold-grad)" />
+  </g>
+</svg>

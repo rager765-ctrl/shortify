@@ -10,7 +10,9 @@ import {
     deleteDoc, 
     getDocs, 
     where,
-    limit
+    limit,
+    getDoc,
+    setDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { showToast, logoutAdmin } from "./auth.js";
 import { generateQRCode } from "./shorten.js";
@@ -28,6 +30,9 @@ export function initDashboard() {
     if (logoutBtn) {
         logoutBtn.addEventListener("click", logoutAdmin);
     }
+    
+    // Setup system registration settings toggle
+    setupSettingsToggle();
     
     // Load Stats and URL list in real-time
     setupRealtimeListeners();
@@ -566,4 +571,46 @@ function fallbackCopyText(text) {
         showToast("Failed to copy link", "error");
     }
     document.body.removeChild(textArea);
+}
+
+// System configuration listeners and controllers
+async function setupSettingsToggle() {
+    const toggle = document.getElementById("admin-signup-toggle");
+    const label = document.getElementById("signup-toggle-label");
+    if (!toggle || !label) return;
+
+    // Load initial state
+    try {
+        const docRef = doc(db, "config", "registration");
+        const docSnap = await getDoc(docRef);
+        let signupEnabled = true;
+        if (docSnap.exists()) {
+            signupEnabled = docSnap.data().signupEnabled !== false;
+        }
+        toggle.checked = signupEnabled;
+        label.innerText = signupEnabled ? "Enabled" : "Disabled";
+        label.style.color = signupEnabled ? "var(--success)" : "var(--text-secondary)";
+    } catch (err) {
+        console.error("Error fetching signup setting:", err);
+    }
+
+    // Bind change listener
+    toggle.addEventListener("change", async () => {
+        const isChecked = toggle.checked;
+        label.innerText = isChecked ? "Enabled" : "Disabled";
+        label.style.color = isChecked ? "var(--success)" : "var(--text-secondary)";
+
+        try {
+            const docRef = doc(db, "config", "registration");
+            await setDoc(docRef, { signupEnabled: isChecked });
+            showToast(isChecked ? "Admin registration enabled!" : "Admin registration disabled!");
+        } catch (err) {
+            console.error("Error updating signup config:", err);
+            showToast("Failed to update registration settings.", "error");
+            // revert UI state
+            toggle.checked = !isChecked;
+            label.innerText = !isChecked ? "Enabled" : "Disabled";
+            label.style.color = !isChecked ? "var(--success)" : "var(--text-secondary)";
+        }
+    });
 }

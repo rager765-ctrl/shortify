@@ -16,7 +16,19 @@
     </script>
     <title>Shortify | Admin Login</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#d97706">
+    <script>
+        // Register Service Worker for PWA features
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then(reg => console.log("Service Worker registered:", reg.scope))
+                    .catch(err => console.error("Service Worker registration failed:", err));
+            });
+        }
+    </script>
 </head>
 <body>
 
@@ -73,6 +85,13 @@
                     </button>
                 </form>
 
+                <!-- Signup Link (shown dynamically if registration is enabled) -->
+                <div id="signup-link-container" class="text-center" style="margin-top: 20px; display: none;">
+                    <p style="font-size: 13.5px; color: var(--text-secondary); margin: 0;">
+                        Need to register? <a href="signup.html" style="color: var(--primary); font-weight: 600; text-decoration: none;">Create Admin Account</a>
+                    </p>
+                </div>
+
                 <div class="text-center" style="margin-top: 25px; border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px;">
                     <button id="manage-config-btn" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 6px 12px; display: none;">
                         ⚙️ Manage Firebase Configuration
@@ -90,7 +109,8 @@
 
     <!-- Scripts -->
     <script type="module">
-        import { configured, clearFirebaseConfig } from "./firebase.js";
+        import { db, configured, clearFirebaseConfig } from "./firebase.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { initAuthGuard, loginAdmin, showConfigOverlay, showToast } from "./auth.js";
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -100,6 +120,25 @@
             const warningBox = document.getElementById("firebase-warning-box");
             const manageConfigBtn = document.getElementById("manage-config-btn");
             const loginForm = document.getElementById("login-form");
+
+            if (configured) {
+                checkSignupStatus();
+            }
+
+            async function checkSignupStatus() {
+                try {
+                    const regSnap = await getDoc(doc(db, "config", "registration"));
+                    let signupEnabled = true;
+                    if (regSnap.exists()) {
+                        signupEnabled = regSnap.data().signupEnabled !== false;
+                    }
+                    if (signupEnabled) {
+                        document.getElementById("signup-link-container").style.display = "block";
+                    }
+                } catch (err) {
+                    console.warn("Could not check signup status:", err);
+                }
+            }
 
             if (!configured) {
                 // If not configured, show warning block and trigger configuration click handlers

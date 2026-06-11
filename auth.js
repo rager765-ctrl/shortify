@@ -55,8 +55,6 @@ export async function checkIfAdmin(uid) {
 
 // Set up page guard for admin files
 export function initAuthGuard(pageType) {
-    return; // Authentication guard bypassed by user request
-
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             const isAdmin = await checkIfAdmin(user.uid);

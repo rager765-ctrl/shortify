@@ -2,9 +2,51 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Public read/write permissions for all collections (since login layer is bypassed)
-    match /{document=**} {
-      allow read, write: if true;
+    // Helper function to check if the user is a registered admin
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.uid == 'EuOE2WhCGrbrQqo269ALI7M2dar1' || 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Admin authorization collection
+    match /admins/{uid} {
+      // Users can check their own admin status during login bootstrapping
+      allow read: if request.auth != null && request.auth.uid == uid;
+      // Allow a user to register themselves if registration is enabled (or not yet configured)
+      allow create: if request.auth != null && request.auth.uid == uid && (
+        !exists(/databases/$(database)/documents/config/registration) || 
+        get(/databases/$(database)/documents/config/registration).data.signupEnabled == true
+      );
+      // Only existing admins can update or delete admin records
+      allow update, delete: if isAdmin();
+    }
+
+    // Config settings
+    match /config/registration {
+      // Anyone can read if signup is enabled
+      allow read: if true;
+      // Only admins can change registration settings
+      allow write: if isAdmin();
+    }
+
+    // Shortened URLs collection
+    match /urls/{shortCode} {
+      // Anyone can look up a short code for redirection, and anyone can shorten a new link
+      allow read, create: if true;
+      // Only authenticated administrators can edit or delete short codes
+      allow update, delete: if isAdmin();
+    }
+
+    // Click analytics tracking logs
+    match /clicks/{clickId} {
+      // Anyone can log a redirection click event
+      allow create: if true;
+      // Only administrators can read or query click analytics logs
+      allow read, list: if isAdmin();
+      // Click logs are write-once/immutable
+      allow update, delete: if false;
     }
   }
 }

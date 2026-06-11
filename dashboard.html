@@ -16,9 +16,21 @@
     </script>
     <title>Shortify | Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#d97706">
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <script>
+        // Register Service Worker for PWA features
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then(reg => console.log("Service Worker registered:", reg.scope))
+                    .catch(err => console.error("Service Worker registration failed:", err));
+            });
+        }
+    </script>
     <style>
         /* Specific dashboard overrides/utilities */
         .selected-row {
@@ -39,8 +51,9 @@
                 <div class="logo-icon">🔗</div>
                 <span>Shortify</span>
             </a>
-            <nav class="nav-links">
+            <nav class="nav-links" style="display: flex; gap: 10px;">
                 <a href="index.html" class="btn btn-secondary">Shortener</a>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
             </nav>
         </div>
     </header>
@@ -49,9 +62,29 @@
     <main class="container" style="padding-top: 40px; padding-bottom: 60px;">
         
         <!-- African Heritage Banner Art -->
-        <div class="hero-banner-art animate-fade" style="margin-bottom: 30px; height: 160px;">
+        <div class="hero-banner-art animate-fade" style="margin-bottom: 20px; height: 160px;">
             <img src="african_heritage_banner.png" alt="African Heritage Art Banner" class="banner-img">
         </div>
+
+        <!-- System Settings Section -->
+        <section class="card settings-card animate-fade mb-4" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 15px; min-width: 250px;">
+                <span style="font-size: 22px;">⚙️</span>
+                <div>
+                    <h3 style="font-size: 15px; margin: 0; font-weight: 700;">Admin Sign-Ups</h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 0; margin-top: 2px;">
+                        Allow other users to self-register as administrators via signup.html.
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+                <span id="signup-toggle-label" style="font-size: 12.5px; font-weight: 700; color: var(--text-secondary);">Enabled</span>
+                <label class="switch-container" style="position: relative; display: inline-block; width: 46px; height: 24px;">
+                    <input type="checkbox" id="admin-signup-toggle" style="opacity: 0; width: 0; height: 0;">
+                    <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.06); border: 1px solid var(--card-border); transition: .3s; border-radius: 24px;"></span>
+                </label>
+            </div>
+        </section>
         
         <!-- Summary Cards Row -->
         <section class="dashboard-grid animate-fade">
@@ -208,7 +241,7 @@
             
             <div style="display: flex; flex-direction: column; gap: 20px;">
                 <!-- Short link preview -->
-                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--card-border);">
+                <div style="background: rgba(0, 0, 0, 0.02); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--card-border);">
                     <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">SHORT URL</div>
                     <div class="d-flex justify-between align-center">
                         <span id="view-short-url" style="font-weight: 700; color: var(--primary); font-family: 'Space Grotesk', sans-serif;">
@@ -235,10 +268,10 @@
                 </div>
 
                 <!-- QR Code Dynamic rendering -->
-                <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); padding: 20px; border: 1px dashed rgba(255,255,255,0.1);">
-                    <div id="view-qrcode"></div>
-                    <button class="btn btn-secondary mt-4 w-full" id="download-qr-btn">
-                        💾 Download QR Code Image
+                <div style="display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, 0.02); border-radius: var(--radius-xl); padding: 24px; border: none; width: 100%;">
+                    <div id="view-qrcode" style="background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: inline-block;"></div>
+                    <button class="btn btn-accent mt-4 w-full" id="download-qr-btn" style="padding: 11px 0; border-radius: var(--radius-md); font-weight: 600; font-size: 13px;">
+                        Download QR Code
                     </button>
                 </div>
             </div>

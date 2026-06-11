@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        // Redirect Samsung Internet browser to Chrome on Android
+        (function() {
+            var ua = navigator.userAgent;
+            if (ua.indexOf("SamsungBrowser") > -1) {
+                var currentUrl = window.location.href.replace(/^https?:\/\//, "");
+                var chromeIntent = "intent://" + currentUrl + "#Intent;scheme=" + window.location.protocol.slice(0, -1) + ";package=com.android.chrome;end";
+                window.location.href = chromeIntent;
+            }
+        })();
+    </script>
+    <title>Shortify | Admin Sign Up</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#d97706">
+    <script>
+        // Register Service Worker for PWA features
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then(reg => console.log("Service Worker registered:", reg.scope))
+                    .catch(err => console.error("Service Worker registration failed:", err));
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Navigation Header -->
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🔗</div>
+                <span>Shortify</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Shortener</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Sign Up Container -->
+    <main class="container" style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 0;">
+        <div class="card login-container animate-fade" style="padding: 0; overflow: hidden;">
+            <!-- Art Header -->
+            <div style="width: 100%; height: 110px; overflow: hidden; border-bottom: 1px solid var(--card-border);">
+                <img src="african_heritage_banner.png" alt="Art Banner" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            
+            <div style="padding: 30px;">
+                <div class="text-center" style="margin-bottom: 25px;">
+                    <h2 style="font-size: 24px; margin-bottom: 5px;">Create Admin Account</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Register a new administrator identity</p>
+                </div>
+
+                <!-- Registration Disabled Alert -->
+                <div id="registration-disabled-box" class="config-notice-card" style="display: none; border-color: var(--danger); background: rgba(239, 68, 68, 0.04);">
+                    <h4 style="color: var(--danger); font-size: 14px; margin-bottom: 6px;">🚫 Sign Up Disabled</h4>
+                    <p style="font-size: 12px; margin: 0; color: var(--text-secondary); line-height: 1.5;">
+                        Administrator registration is currently disabled by the system owner. If you are the owner, you can enable it from the dashboard settings.
+                    </p>
+                </div>
+
+                <!-- Setup Alert -->
+                <div id="firebase-warning-box" class="config-notice-card" style="display: none;">
+                    <h4>⚠️ Setup Required</h4>
+                    <p style="font-size: 12px; margin: 0; color: var(--text-secondary);">
+                        Firebase configuration is missing or holds placeholder values. Set up configuration using the button below.
+                    </p>
+                    <button type="button" id="trigger-setup-btn" class="btn btn-secondary w-full" style="padding: 8px 0; font-size: 12px; margin-top: 5px;">
+                        Configure Firebase
+                    </button>
+                </div>
+
+                <!-- Sign Up Form -->
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label class="form-label" for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" class="form-control" placeholder="admin@shortify.com" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="signup-password">Password</label>
+                        <input type="password" id="signup-password" class="form-control" placeholder="••••••••" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="signup-confirm-password">Confirm Password</label>
+                        <input type="password" id="signup-confirm-password" class="form-control" placeholder="••••••••" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" id="signup-submit-btn" class="btn btn-primary w-full" style="padding: 14px 0;">
+                        Register Administrator
+                    </button>
+                </form>
+
+                <div class="text-center" style="margin-top: 25px; border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px;">
+                    <p style="font-size: 13.5px; color: var(--text-secondary); margin: 0;">
+                        Already have an account? <a href="login.html" style="color: var(--primary); font-weight: 600; text-decoration: none;">Log In</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Shortify. Built by Mr. Rager & 3Strong Inc.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { db, auth, configured } from "./firebase.js";
+        import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { showToast, showConfigOverlay } from "./auth.js";
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const warningBox = document.getElementById("firebase-warning-box");
+            const disabledBox = document.getElementById("registration-disabled-box");
+            const signupForm = document.getElementById("signup-form");
+            const submitBtn = document.getElementById("signup-submit-btn");
+
+            if (!configured) {
+                warningBox.style.display = "flex";
+                document.getElementById("trigger-setup-btn").addEventListener("click", showConfigOverlay);
+                signupForm.querySelectorAll("input, button").forEach(el => el.disabled = true);
+                return;
+            }
+
+            // Check if registration is active in Firestore settings
+            let signupEnabled = true;
+            try {
+                const regSnap = await getDoc(doc(db, "config", "registration"));
+                if (regSnap.exists()) {
+                    signupEnabled = regSnap.data().signupEnabled !== false;
+                }
+            } catch (err) {
+                console.warn("Could not retrieve registration settings, default to enabled for setup:", err);
+            }
+
+            if (!signupEnabled) {
+                disabledBox.style.display = "flex";
+                signupForm.querySelectorAll("input, button").forEach(el => el.disabled = true);
+                submitBtn.style.display = "none";
+                return;
+            }
+
+            // Bind Form Submit
+            signupForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById("signup-email").value.trim();
+                const password = document.getElementById("signup-password").value;
+                const confirmPassword = document.getElementById("signup-confirm-password").value;
+
+                if (password.length < 6) {
+                    showToast("Password must be at least 6 characters long.", "warning");
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showToast("Passwords do not match.", "warning");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `<div class="spinner" style="margin:0 auto;"></div>`;
+
+                try {
+                    // Create Firebase Auth user
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    // Write Admin privilege document to Firestore
+                    await setDoc(doc(db, "admins", user.uid), {
+                        email: email,
+                        createdAt: new Date(),
+                        role: "admin"
+                    });
+
+                    showToast("Account created successfully!");
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1000);
+
+                } catch (err) {
+                    console.error("Signup error:", err);
+                    let errMessage = err.message;
+                    if (err.code === "auth/email-already-in-use") {
+                        errMessage = "This email is already registered.";
+                    }
+                    showToast(`Failed to register: ${errMessage}`, "error");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
