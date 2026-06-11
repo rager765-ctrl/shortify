@@ -1,9 +1,17 @@
 {
   "cleanUrls": true,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "src": "^/(dashboard|login|signup)$",
+      "dest": "/$1.html"
+    },
+    {
+      "src": "^/.*\\..*$",
+      "dest": "$0"
+    },
+    {
+      "src": "^/.*$",
+      "dest": "/index.html"
     }
   ]
 }
