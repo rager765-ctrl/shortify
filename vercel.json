@@ -1,9 +1,3 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/((?!dashboard|login|signup|index|style\\.css|firebase\\.js|redirect\\.js|shorten\\.js|auth\\.js|dashboard\\.js|icon\\.svg|urban_doodle_art\\.png|african_heritage_banner\\.png).*)",
-      "destination": "/index.html"
-    }
-  ]
+  "cleanUrls": true
 }
