@@ -187,7 +187,7 @@
                     const result = await createShortLink(longUrl, customAlias);
                     
                     // Display results
-                    currentShortUrl = `${window.location.origin}/${result.shortCode}`;
+                    currentShortUrl = `${window.location.origin}/?c=${result.shortCode}`;
                     shortenedUrlText.innerText = currentShortUrl;
                     originalUrlText.innerText = result.longUrl;
                     
