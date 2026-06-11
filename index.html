@@ -22,17 +22,19 @@
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#d97706">
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script>
-        // Register Service Worker for PWA features
+        // Unregister existing Service Workers to revert PWA caching
         if ("serviceWorker" in navigator) {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register("sw.js")
-                    .then(reg => console.log("Service Worker registered:", reg.scope))
-                    .catch(err => console.error("Service Worker registration failed:", err));
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                for (let reg of registrations) {
+                    reg.unregister().then(() => {
+                        console.log("Service Worker unregistered.");
+                        window.location.reload();
+                    });
+                }
             });
         }
     </script>
@@ -163,6 +165,14 @@
                 // Not redirecting, activate home UI
                 setupHomeUI();
             }
+
+            // Listen for hash changes to allow seamless client-side redirection
+            window.addEventListener("hashchange", async () => {
+                const redirectingHash = await checkRedirect();
+                if (redirectingHash) {
+                    document.getElementById("shortener-interface").style.display = "none";
+                }
+            });
         });
 
         function setupHomeUI() {
@@ -203,7 +213,7 @@
                     const result = await createShortLink(longUrl, customAlias);
                     
                     // Display results
-                    currentShortUrl = `${window.location.host}/${result.shortCode}`;
+                    currentShortUrl = `${window.location.host}/#${result.shortCode}`;
                     shortenedUrlText.innerText = currentShortUrl;
                     originalUrlText.innerText = result.longUrl;
                     

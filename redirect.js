@@ -36,16 +36,22 @@ async function getIPHash() {
 // Main check function to see if we should redirect
 export async function checkRedirect() {
     // 1. Determine if a short code is present
+    // Check hash first (e.g. #H3Nb09 or #/H3Nb09)
+    let hashCode = window.location.hash.replace(/^#\/?/, "").trim();
+    if (hashCode.includes("?")) {
+        hashCode = hashCode.split("?")[0];
+    }
+    
     const path = window.location.pathname.replace(/^\/|\/$/g, "");
     
     // Check url search params for c=... or code=...
     const urlParams = new URLSearchParams(window.location.search);
     const queryCode = urlParams.get("c") || urlParams.get("code");
     
-    const reservedPaths = ["index.html", "dashboard.html", "login.html", "css", "js", "assets"];
+    const reservedPaths = ["index.html", "dashboard.html", "login.html", "signup.html", "css", "js", "assets"];
     const isStaticFile = path.includes(".") || reservedPaths.some(p => path.startsWith(p));
     
-    const shortCode = queryCode || (path && !isStaticFile ? path : null);
+    const shortCode = hashCode || queryCode || (path && !isStaticFile ? path : null);
     
     if (!shortCode) {
         // No redirect needed, display the normal shorten interface

@@ -161,7 +161,7 @@ function renderUrlsTable(filterQuery = "") {
             createdStr = formatTimeAgo(date);
         }
         
-        const shortUrl = `${window.location.host}/${url.shortCode}`;
+        const shortUrl = `${window.location.host}/#${url.shortCode}`;
         const activeBadge = url.active !== false 
             ? `<span class="badge badge-success">Active</span>`
             : `<span class="badge badge-danger">Disabled</span>`;
@@ -255,9 +255,9 @@ async function showAnalytics(code) {
                 <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Short Link</div>
                 <div class="d-flex justify-between align-center">
                     <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; color: var(--accent); font-size: 15px;">
-                        ${window.location.host}/${code}
+                        ${window.location.host}/#${code}
                     </span>
-                    <button class="btn btn-secondary" onclick="window.copyToClipboard('${window.location.host}/${code}');" style="padding: 4px 8px; font-size: 11px;">
+                    <button class="btn btn-secondary" onclick="window.copyToClipboard('${window.location.host}/#${code}');" style="padding: 4px 8px; font-size: 11px;">
                         Copy
                     </button>
                 </div>
@@ -367,7 +367,7 @@ function openViewModal(code) {
     
     document.getElementById("view-modal-title").innerText = `/${code} Details`;
     
-    const shortUrl = `${window.location.host}/${code}`;
+    const shortUrl = `${window.location.host}/#${code}`;
     document.getElementById("view-short-url").innerText = shortUrl;
     document.getElementById("view-long-url").innerText = urlData.longUrl;
     document.getElementById("view-long-url").href = urlData.longUrl;
