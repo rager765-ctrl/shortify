@@ -46,8 +46,9 @@ service cloud.firestore {
       allow create: if true;
       // Only administrators can read or query click analytics logs
       allow read, list: if isAdmin();
-      // Click logs are write-once/immutable
-      allow update, delete: if false;
+      // Click logs are write-once/immutable (updates blocked, deletes allowed for admins)
+      allow update: if false;
+      allow delete: if isAdmin();
     }
   }
 }

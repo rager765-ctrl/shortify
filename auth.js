@@ -146,7 +146,7 @@ export async function loginAdmin(email, password) {
         }
     } catch (error) {
         console.error("Login error:", error);
-        showToast(`Login Error: [${error.code}] ${error.message}`, "error");
+        showToast("Access Denied", "error");
     }
 }
 

@@ -113,7 +113,6 @@
                     <div class="result-card" style="margin-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 25px;">
                         <div class="result-header">
                             <h3 style="font-size: 18px;">Short Link Created!</h3>
-                            <span class="badge badge-success">Success</span>
                         </div>
                         
                         <div class="result-url-display">
@@ -124,6 +123,7 @@
                             <div class="action-buttons">
                                 <button class="btn btn-secondary" id="copy-btn">Copy Link</button>
                                 <button class="btn btn-secondary" id="qr-toggle-btn">Show QR Code</button>
+                                <a class="btn btn-primary" id="visit-btn" target="_blank" style="text-decoration: none;">Visit Link</a>
                             </div>
                         </div>
                         
@@ -142,7 +142,7 @@
             </section>
 
             <!-- Hero Banner Description -->
-            <p class="animate-fade text-center" style="color: var(--text-secondary); max-width: 600px; margin: 12px auto 0 auto; line-height: 1.6; font-size: 15px; padding: 0 15px;">
+            <p class="animate-fade text-center" style="color: var(--text-secondary); max-width: 600px; margin: 12px auto 40px auto; line-height: 1.6; font-size: 15px; padding: 0 15px;">
                 Track clicks in real-time, generate custom QR codes, and customize link aliases instantly.
             </p>
         </div>
@@ -221,6 +221,11 @@
                     shortenedUrlText.innerText = currentShortUrl;
                     originalUrlText.innerText = result.longUrl;
                     
+                    const visitBtn = document.getElementById("visit-btn");
+                    if (visitBtn) {
+                        visitBtn.href = `${window.location.protocol}//${currentShortUrl}`;
+                    }
+
                     resultContainer.style.display = "block";
                     qrResultContainer.style.display = "none";
                     qrToggleBtn.innerText = "Show QR Code";
@@ -286,12 +291,35 @@
             downloadQrAction.addEventListener("click", () => {
                 const img = document.querySelector("#qrcode img");
                 if (img) {
-                    const link = document.createElement("a");
-                    link.href = img.src;
-                    link.download = `qrcode_shortify.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    try {
+                        const base64Data = img.src;
+                        const parts = base64Data.split(';base64,');
+                        const contentType = parts[0].split(':')[1];
+                        const raw = window.atob(parts[1]);
+                        const rawLength = raw.length;
+                        const uInt8Array = new Uint8Array(rawLength);
+                        for (let i = 0; i < rawLength; ++i) {
+                            uInt8Array[i] = raw.charCodeAt(i);
+                        }
+                        const blob = new Blob([uInt8Array], { type: contentType });
+                        const blobUrl = URL.createObjectURL(blob);
+
+                        const link = document.createElement("a");
+                        link.href = blobUrl;
+                        link.download = `qrcode_shortify.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                    } catch (err) {
+                        console.error("Error downloading QR:", err);
+                        const link = document.createElement("a");
+                        link.href = img.src;
+                        link.download = `qrcode_shortify.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
                 } else {
                     showToast("QR image not ready", "warning");
                 }

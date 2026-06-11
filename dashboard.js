@@ -382,12 +382,35 @@ function openViewModal(code) {
     newDownloadBtn.addEventListener("click", () => {
         const qrImg = document.querySelector("#view-qrcode img");
         if (qrImg) {
-            const link = document.createElement("a");
-            link.href = qrImg.src;
-            link.download = `qr_${code}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                const base64Data = qrImg.src;
+                const parts = base64Data.split(';base64,');
+                const contentType = parts[0].split(':')[1];
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                const blob = new Blob([uInt8Array], { type: contentType });
+                const blobUrl = URL.createObjectURL(blob);
+
+                const link = document.createElement("a");
+                link.href = blobUrl;
+                link.download = `qr_${code}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+            } catch (err) {
+                console.error("Error downloading QR:", err);
+                const link = document.createElement("a");
+                link.href = qrImg.src;
+                link.download = `qr_${code}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         } else {
             showToast("QR code image not loaded yet.", "warning");
         }
@@ -457,12 +480,70 @@ async function confirmDeleteUrl(code) {
     }
 }
 
+async function confirmDeleteAllUrls() {
+    if (urlsData.length === 0) {
+        showToast("No links to delete.", "info");
+        return;
+    }
+
+    if (confirm(`WARNING: Are you absolutely sure you want to delete ALL ${urlsData.length} short links and all click history? This action is permanent and cannot be undone.`)) {
+        const confirmText = prompt("Type 'DELETE ALL' to confirm this destructive action:");
+        if (confirmText !== "DELETE ALL") {
+            showToast("Action cancelled. Confirmation text did not match.", "warning");
+            return;
+        }
+
+        try {
+            showToast("Deleting all links...", "info");
+            
+            // 1. Delete all URL documents
+            const deletePromises = urlsData.map(url => deleteDoc(doc(db, "urls", url.shortCode)));
+            await Promise.all(deletePromises);
+            
+            // 2. Fetch and delete all clicks
+            const clicksSnapshot = await getDocs(collection(db, "clicks"));
+            const deleteClickPromises = [];
+            clicksSnapshot.forEach(clickDoc => {
+                deleteClickPromises.push(deleteDoc(doc(db, "clicks", clickDoc.id)));
+            });
+            await Promise.all(deleteClickPromises);
+            
+            showToast("All short links and click logs successfully deleted.");
+            
+            // Clear selected analytics
+            selectedUrlCode = null;
+            const panel = document.getElementById("analytics-container");
+            if (panel) {
+                panel.innerHTML = `
+                    <div class="card analytics-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                        <p style="margin-top: 10px;">Select a link to view click analytics</p>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.error("Error deleting all links:", err);
+            showToast("Failed to delete all links.", "error");
+        }
+    }
+}
+
 function setupDashboardEvents() {
     // Search input
     const searchInput = document.getElementById("search-input");
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
             renderUrlsTable(e.target.value);
+        });
+    }
+
+    // Delete All button
+    const deleteAllBtn = document.getElementById("delete-all-btn");
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener("click", () => {
+            confirmDeleteAllUrls();
         });
     }
     

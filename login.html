@@ -81,11 +81,7 @@
                     </p>
                 </div>
 
-                <div class="text-center" style="margin-top: 25px; border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px;">
-                    <button id="manage-config-btn" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 6px 12px; display: none;">
-                        ⚙️ Manage Firebase Configuration
-                    </button>
-                </div>
+
             </div>
         </div>
     </main>
@@ -107,7 +103,6 @@
             initAuthGuard("login");
             
             const warningBox = document.getElementById("firebase-warning-box");
-            const manageConfigBtn = document.getElementById("manage-config-btn");
             const loginForm = document.getElementById("login-form");
 
             if (configured) {
@@ -136,14 +131,6 @@
                 
                 // Disable login form until configured
                 loginForm.querySelectorAll("input, button").forEach(el => el.disabled = true);
-            } else {
-                // Configured, show option to reset/change config
-                manageConfigBtn.style.display = "inline-block";
-                manageConfigBtn.addEventListener("click", () => {
-                    if (confirm("Do you want to clear your saved Firebase configuration? You will need to re-configure on next reload.")) {
-                        clearFirebaseConfig();
-                    }
-                });
             }
 
             // Bind Form Submit

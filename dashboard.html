@@ -117,9 +117,14 @@
                 <span style="opacity: 0.5; margin-right: 8px;">🔍</span>
                 <input type="text" id="search-input" class="form-control" placeholder="Search by short code or target URL..." style="border: none; background: transparent; padding: 10px 0;">
             </div>
-            <button id="create-link-btn" class="btn btn-primary">
-                <span>+ Create Short URL</span>
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button id="delete-all-btn" class="btn btn-danger">
+                    <span>🗑 Clear All Links</span>
+                </button>
+                <button id="create-link-btn" class="btn btn-primary">
+                    <span>+ Create Short URL</span>
+                </button>
+            </div>
         </section>
 
         <!-- Dashboard Table & Selected Analytics -->
