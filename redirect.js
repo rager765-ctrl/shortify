@@ -72,6 +72,30 @@ export async function checkRedirect() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             
+            // Extract target URL and domain for link preview details
+            let targetUrl = data.longUrl;
+            if (!/^https?:\/\//i.test(targetUrl)) {
+                targetUrl = "https://" + targetUrl;
+            }
+            let domain = "";
+            try {
+                domain = new URL(targetUrl).hostname;
+            } catch (e) {
+                domain = targetUrl;
+            }
+
+            // Update page header info & metadata preview on redirect
+            document.title = `Redirecting to ${domain} | Shortify`;
+            
+            const metaDesc = document.getElementById("meta-description");
+            if (metaDesc) metaDesc.setAttribute("content", `Redirecting you to ${targetUrl}.`);
+            
+            const ogTitle = document.getElementById("og-title");
+            if (ogTitle) ogTitle.setAttribute("content", `Redirecting to ${domain}`);
+            
+            const ogDesc = document.getElementById("og-description");
+            if (ogDesc) ogDesc.setAttribute("content", `Shortened URL redirection to ${targetUrl} via Shortify.`);
+            
             // Check if active
             if (data.active !== false) {
                 document.getElementById("redirect-status-message").innerText = "Redirecting you now...";
@@ -93,12 +117,6 @@ export async function checkRedirect() {
                 });
                 
                 // 5. Navigate to original long URL
-                let targetUrl = data.longUrl;
-                // Prepend http if not present
-                if (!/^https?:\/\//i.test(targetUrl)) {
-                    targetUrl = "https://" + targetUrl;
-                }
-                
                 window.location.replace(targetUrl);
             } else {
                 document.getElementById("redirect-status-message").innerHTML = 
