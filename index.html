@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        // Redirect Samsung Internet browser to Chrome on Android
+        (function() {
+            var ua = navigator.userAgent;
+            if (ua.indexOf("SamsungBrowser") > -1) {
+                var currentUrl = window.location.href.replace(/^https?:\/\//, "");
+                var chromeIntent = "intent://" + currentUrl + "#Intent;scheme=" + window.location.protocol.slice(0, -1) + ";package=com.android.chrome;end";
+                window.location.href = chromeIntent;
+            }
+        })();
+    </script>
+    <title>Shortify | Premium URL Shortener</title>
+    <meta name="description" content="Shorten your links, customize your aliases, track detailed analytics, and generate dynamic QR codes.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'/%3E%3C/svg%3E">
+    <!-- Load QRCode.js library via jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🔗</div>
+                <span>Shortify</span>
+            </a>
+            <nav class="nav-links">
+                <a href="dashboard.html" class="btn btn-secondary">Admin Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content wrapper -->
+    <main class="container" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        
+        <!-- Redirect Loading Overlay (Hidden by default, shown during redirect) -->
+        <div id="redirect-loading" style="display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 0;">
+            <div class="spinner" style="width: 48px; height: 48px; border-width: 4px; border-top-color: var(--primary); margin-bottom: 25px;"></div>
+            <h2 style="font-size: 28px; margin-bottom: 10px;">Navigating through Shortify</h2>
+            <p id="redirect-status-message" style="color: var(--text-secondary); font-size: 16px;">
+                Checking short code <strong id="redirect-code-display" style="color: var(--primary);">...</strong>
+            </p>
+        </div>
+
+        <!-- Shortener Interface (Visible by default) -->
+        <div id="shortener-interface">
+            <!-- African Heritage Banner Art -->
+            <div class="hero-banner-art animate-fade" style="margin-top: 30px; height: 180px;">
+                <img src="african_heritage_banner.png" alt="African Heritage Art Banner" class="banner-img">
+            </div>
+
+            <!-- Hero Banner -->
+            <section class="hero animate-fade">
+                <h1>Create short links with <br><span style="background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">maximum control</span></h1>
+                <p>Track clicks in real-time, generate custom QR codes, and customize link aliases instantly.</p>
+            </section>
+
+            <!-- Shortening widget -->
+            <section class="shortener-widget card">
+                <form id="shorten-form">
+                    <div class="input-group">
+                        <input type="text" id="long-url-input" placeholder="Paste your long link here (e.g. https://example.com/very/long/path)..." required>
+                        <button type="submit" class="btn btn-primary" id="shorten-submit-btn">
+                            <span>Shorten URL</span>
+                        </button>
+                    </div>
+
+                    <!-- Advanced Options (Custom Alias) -->
+                    <div class="advanced-options">
+                        <div class="advanced-toggle" id="advanced-toggle">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>Advanced Options (Custom Alias)</span>
+                        </div>
+                        <div class="advanced-fields" id="advanced-fields">
+                            <div class="form-group" style="margin-bottom: 0; margin-top: 12px; max-width: 320px;">
+                                <label class="form-label" for="custom-alias-input">Custom Alias (Optional)</label>
+                                <div style="display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.15); border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 2px 10px;">
+                                    <span style="color: var(--text-muted); font-size: 14px; user-select: none;">/</span>
+                                    <input type="text" id="custom-alias-input" class="form-control" placeholder="my-custom-link" style="border: none; background: transparent; padding: 10px 0;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Results display card (Hidden initially) -->
+                <div class="result-container" id="result-container">
+                    <div class="result-card" style="margin-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 25px;">
+                        <div class="result-header">
+                            <h3 style="font-size: 18px;">Short Link Created!</h3>
+                            <span class="badge badge-success">Success</span>
+                        </div>
+                        
+                        <div class="result-url-display">
+                            <div>
+                                <div class="shortened-url" id="shortened-url-text">https://yourdomain.com/code</div>
+                                <div class="original-url-preview" id="original-url-text">https://google.com</div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary" id="copy-btn">Copy Link</button>
+                                <button class="btn btn-secondary" id="qr-toggle-btn">Show QR Code</button>
+                            </div>
+                        </div>
+                        
+                        <!-- QR Code visual container (Hidden initially) -->
+                        <div class="qr-container" id="qr-result-container" style="display: none; animation: fadeIn 0.3s ease-out;">
+                            <div id="qrcode"></div>
+                            <p style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);">
+                                Anyone scanning this QR code redirects through your short link.
+                            </p>
+                            <button class="btn btn-secondary btn-sm mt-4" id="download-qr-action" style="padding: 6px 12px; font-size: 12px;">
+                                💾 Download QR Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Shortify URL Shortener. Built by Mr. Rager & 3Strong Inc.</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK initialization and Routing Engine -->
+    <script type="module">
+        import { checkRedirect } from "./redirect.js";
+        import { createShortLink, generateQRCode } from "./shorten.js";
+        import { showToast } from "./auth.js";
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // 1. Process routing (redirection) if a short code path is detected
+            const redirecting = await checkRedirect();
+            
+            if (!redirecting) {
+                // Not redirecting, activate home UI
+                setupHomeUI();
+            }
+        });
+
+        function setupHomeUI() {
+            const advancedToggle = document.getElementById("advanced-toggle");
+            const advancedFields = document.getElementById("advanced-fields");
+            const shortenForm = document.getElementById("shorten-form");
+            const resultContainer = document.getElementById("result-container");
+            const shortenedUrlText = document.getElementById("shortened-url-text");
+            const originalUrlText = document.getElementById("original-url-text");
+            
+            const copyBtn = document.getElementById("copy-btn");
+            const qrToggleBtn = document.getElementById("qr-toggle-btn");
+            const qrResultContainer = document.getElementById("qr-result-container");
+            const downloadQrAction = document.getElementById("download-qr-action");
+
+            let currentShortUrl = "";
+
+            // Advanced Alias toggle
+            advancedToggle.addEventListener("click", () => {
+                advancedToggle.classList.toggle("open");
+                advancedFields.classList.toggle("show");
+            });
+
+            // Form Submit Shortener logic
+            shortenForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const longUrl = document.getElementById("long-url-input").value;
+                const customAlias = document.getElementById("custom-alias-input").value;
+                const submitBtn = document.getElementById("shorten-submit-btn");
+
+                // Show spinner
+                submitBtn.disabled = true;
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `<div class="spinner"></div>`;
+
+                try {
+                    const result = await createShortLink(longUrl, customAlias);
+                    
+                    // Display results
+                    currentShortUrl = `${window.location.origin}/${result.shortCode}`;
+                    shortenedUrlText.innerText = currentShortUrl;
+                    originalUrlText.innerText = result.longUrl;
+                    
+                    resultContainer.style.display = "block";
+                    qrResultContainer.style.display = "none";
+                    qrToggleBtn.innerText = "Show QR Code";
+                    
+                    showToast("Short link created successfully!");
+                    
+                    // Generate the QR Code in memory, ready if they click show
+                    generateQRCode("qrcode", currentShortUrl);
+
+                } catch (err) {
+                    console.error("Shortening failure:", err);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            });
+
+            // Copy Link Action
+            copyBtn.addEventListener("click", () => {
+                if (!currentShortUrl) return;
+                navigator.clipboard.writeText(currentShortUrl);
+                showToast("Copied to clipboard!");
+            });
+
+            // Toggle QR Panel
+            qrToggleBtn.addEventListener("click", () => {
+                if (qrResultContainer.style.display === "none") {
+                    qrResultContainer.style.display = "flex";
+                    qrToggleBtn.innerText = "Hide QR Code";
+                } else {
+                    qrResultContainer.style.display = "none";
+                    qrToggleBtn.innerText = "Show QR Code";
+                }
+            });
+
+            // Download QR
+            downloadQrAction.addEventListener("click", () => {
+                const img = document.querySelector("#qrcode img");
+                if (img) {
+                    const link = document.createElement("a");
+                    link.href = img.src;
+                    link.download = `qrcode_shortify.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    showToast("QR image not ready", "warning");
+                }
+            });
+        }
+    </script>
+</body>
+</html>

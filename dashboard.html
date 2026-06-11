@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        // Redirect Samsung Internet browser to Chrome on Android
+        (function() {
+            var ua = navigator.userAgent;
+            if (ua.indexOf("SamsungBrowser") > -1) {
+                var currentUrl = window.location.href.replace(/^https?:\/\//, "");
+                var chromeIntent = "intent://" + currentUrl + "#Intent;scheme=" + window.location.protocol.slice(0, -1) + ";package=com.android.chrome;end";
+                window.location.href = chromeIntent;
+            }
+        })();
+    </script>
+    <title>Shortify | Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'/%3E%3C/svg%3E">
+    <!-- Load QRCode.js library via jsDelivr CDN -->
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <style>
+        /* Specific dashboard overrides/utilities */
+        .selected-row {
+            background: rgba(79, 70, 229, 0.04) !important;
+            border-left: 3px solid var(--accent);
+        }
+        tr.selected-row td {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🔗</div>
+                <span>Shortify</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="btn btn-secondary">Shortener</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Dashboard Main Area -->
+    <main class="container" style="padding-top: 40px; padding-bottom: 60px;">
+        
+        <!-- African Heritage Banner Art -->
+        <div class="hero-banner-art animate-fade" style="margin-bottom: 30px; height: 160px;">
+            <img src="african_heritage_banner.png" alt="African Heritage Art Banner" class="banner-img">
+        </div>
+        
+        <!-- Summary Cards Row -->
+        <section class="dashboard-grid animate-fade">
+            <!-- Card 1: Total Links -->
+            <div class="card stat-card">
+                <div class="stat-icon">🔗</div>
+                <div class="stat-info">
+                    <h3 id="stat-total-links">0</h3>
+                    <p>Total Links</p>
+                </div>
+            </div>
+            <!-- Card 2: Total Clicks -->
+            <div class="card stat-card clicks">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3 id="stat-total-clicks">0</h3>
+                    <p>Total Clicks</p>
+                </div>
+            </div>
+            <!-- Card 3: Today's Clicks -->
+            <div class="card stat-card today-clicks">
+                <div class="stat-icon">📈</div>
+                <div class="stat-info">
+                    <h3 id="stat-today-clicks">0</h3>
+                    <p>Today's Clicks</p>
+                </div>
+            </div>
+            <!-- Card 4: Active Links -->
+            <div class="card stat-card active-links">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <h3 id="stat-active-links">0</h3>
+                    <p>Active Links</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Control bar -->
+        <section class="d-flex justify-between align-center mb-4" style="flex-wrap: wrap; gap: 15px;">
+            <div style="flex: 1; min-width: 280px; max-width: 400px; display: flex; align-items: center; background: rgba(0,0,0,0.15); border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 2px 12px;">
+                <span style="opacity: 0.5; margin-right: 8px;">🔍</span>
+                <input type="text" id="search-input" class="form-control" placeholder="Search by short code or target URL..." style="border: none; background: transparent; padding: 10px 0;">
+            </div>
+            <button id="create-link-btn" class="btn btn-primary">
+                <span>+ Create Short URL</span>
+            </button>
+        </section>
+
+        <!-- Dashboard Table & Selected Analytics -->
+        <section class="dashboard-layout">
+            <!-- Links management table card -->
+            <div class="card" style="padding: 24px; display: flex; flex-direction: column;">
+                <div class="table-header">
+                    <h2 style="font-size: 20px;">Manage Links</h2>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Short Code</th>
+                                <th>Original URL</th>
+                                <th>Clicks</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="urls-table-body">
+                            <!-- Populated dynamically -->
+                            <tr>
+                                <td colspan="5" class="text-center" style="padding: 40px 0;">
+                                    <div class="spinner" style="margin: 0 auto;"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Single URL analytics card -->
+            <div id="analytics-container">
+                <div class="card analytics-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                    </svg>
+                    <p style="margin-top: 10px;">Select a link to view click analytics</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Create link Modal -->
+    <div class="modal-overlay" id="modal-overlay-create">
+        <div class="modal">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">Create Short URL</h2>
+            
+            <form id="create-url-form">
+                <div class="form-group">
+                    <label class="form-label" for="create-long-url">Destination URL</label>
+                    <input type="text" id="create-long-url" class="form-control" placeholder="https://example.com/some/destination" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="create-custom-alias">Custom Alias (Optional)</label>
+                    <input type="text" id="create-custom-alias" class="form-control" placeholder="custom-tag">
+                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+                        Leave blank to generate a random 6-character code.
+                    </small>
+                </div>
+                
+                <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary modal-close-btn">Cancel</button>
+                    <button type="submit" id="create-submit-btn" class="btn btn-primary">Create Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit link Modal -->
+    <div class="modal-overlay" id="modal-overlay-edit">
+        <div class="modal">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title">Edit Short URL</h2>
+            
+            <form id="edit-url-form">
+                <input type="hidden" id="edit-short-code">
+                
+                <div class="form-group">
+                    <label class="form-label">Destination URL</label>
+                    <input type="text" id="edit-long-url" class="form-control" required>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 20px;">
+                    <input type="checkbox" id="edit-active-toggle" style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="edit-active-toggle" class="form-label" style="margin-bottom: 0; cursor: pointer;">
+                        Link Active (redirects enabled)
+                    </label>
+                </div>
+                
+                <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary modal-close-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View details / QR Modal -->
+    <div class="modal-overlay" id="modal-overlay-view">
+        <div class="modal" id="view-modal">
+            <button class="modal-close">&times;</button>
+            <h2 class="modal-title" id="view-modal-title">Link Details</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Short link preview -->
+                <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--card-border);">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">SHORT URL</div>
+                    <div class="d-flex justify-between align-center">
+                        <span id="view-short-url" style="font-weight: 700; color: var(--primary); font-family: 'Space Grotesk', sans-serif;">
+                            https://yourdomain.com/code
+                        </span>
+                        <button class="btn btn-secondary" id="view-copy-btn" style="padding: 4px 8px; font-size: 11px;">Copy</button>
+                    </div>
+                </div>
+
+                <!-- Destination URL -->
+                <div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">DESTINATION URL</div>
+                    <a id="view-long-url" href="#" target="_blank" style="word-break: break-all; font-size: 13px; color: var(--text-secondary); text-decoration: underline;">
+                        https://example.com/dest
+                    </a>
+                </div>
+
+                <!-- Clicks Stat -->
+                <div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">TOTAL CLICKS</div>
+                    <div id="view-clicks" style="font-size: 24px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--accent);">
+                        0
+                    </div>
+                </div>
+
+                <!-- QR Code Dynamic rendering -->
+                <div style="display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); padding: 20px; border: 1px dashed rgba(255,255,255,0.1);">
+                    <div id="view-qrcode"></div>
+                    <button class="btn btn-secondary mt-4 w-full" id="download-qr-btn">
+                        💾 Download QR Code Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Shortify URL Shortener. Built by Mr. Rager & 3Strong Inc.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initAuthGuard, showToast } from "./auth.js";
+        import { initDashboard } from "./dashboard.js";
+        import { createShortLink } from "./shorten.js";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Guard route, redirect to login if not authenticated as admin
+            initAuthGuard("dashboard");
+            
+            // Start dashboard data syncing and events
+            initDashboard();
+
+            // Set up Create Short Link modal triggers
+            const createBtn = document.getElementById("create-link-btn");
+            const createOverlay = document.getElementById("modal-overlay-create");
+            const createForm = document.getElementById("create-url-form");
+
+            createBtn.addEventListener("click", () => {
+                createForm.reset();
+                createOverlay.classList.add("active");
+            });
+
+            // Close actions on cancel buttons
+            document.querySelectorAll(".modal-close-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    btn.closest(".modal-overlay").classList.remove("active");
+                });
+            });
+
+            // Handle Dashboard shortener creation
+            createForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const longUrl = document.getElementById("create-long-url").value.trim();
+                const customAlias = document.getElementById("create-custom-alias").value.trim() || null;
+                const submitBtn = document.getElementById("create-submit-btn");
+
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `<div class="spinner"></div>`;
+
+                try {
+                    await createShortLink(longUrl, customAlias);
+                    showToast("Shortened URL successfully registered.");
+                    createOverlay.classList.remove("active");
+                } catch (err) {
+                    console.error("Dashboard shortening failed:", err);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

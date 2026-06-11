@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+        // Redirect Samsung Internet browser to Chrome on Android
+        (function() {
+            var ua = navigator.userAgent;
+            if (ua.indexOf("SamsungBrowser") > -1) {
+                var currentUrl = window.location.href.replace(/^https?:\/\//, "");
+                var chromeIntent = "intent://" + currentUrl + "#Intent;scheme=" + window.location.protocol.slice(0, -1) + ";package=com.android.chrome;end";
+                window.location.href = chromeIntent;
+            }
+        })();
+    </script>
+    <title>Shortify | Admin Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'/%3E%3C/svg%3E">
+</head>
+<body>
+
+    <!-- Navigation Header -->
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🔗</div>
+                <span>Shortify</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Shortener</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Login Container -->
+    <main class="container" style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 0;">
+        <div class="card login-container animate-fade" style="padding: 0; overflow: hidden;">
+            <!-- Art Header -->
+            <div style="width: 100%; height: 110px; overflow: hidden; border-bottom: 1px solid var(--card-border);">
+                <img src="african_heritage_banner.png" alt="Art Banner" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            
+            <div style="padding: 30px;">
+                <div class="text-center" style="margin-bottom: 30px;">
+                    <h2 style="font-size: 24px; margin-bottom: 5px;">Welcome Back</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Log in to access your admin dashboard</p>
+                </div>
+
+                <!-- Configuration Alert (Visible when Firebase is not setup) -->
+                <div id="firebase-warning-box" class="config-notice-card" style="display: none;">
+                    <h4>⚠️ Setup Required</h4>
+                    <p style="font-size: 12px; margin: 0; color: var(--text-secondary);">
+                        Firebase configuration is missing or holds placeholder values. Set up configuration using the button below.
+                    </p>
+                    <button type="button" id="trigger-setup-btn" class="btn btn-secondary w-full" style="padding: 8px 0; font-size: 12px; margin-top: 5px;">
+                        Configure Firebase
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label" for="login-email">Email Address</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="admin@shortify.com" required autocomplete="username">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" id="login-submit-btn" class="btn btn-primary w-full" style="padding: 14px 0;">
+                        Log In to Dashboard
+                    </button>
+                </form>
+
+                <div class="text-center" style="margin-top: 25px; border-top: 1px solid rgba(0, 0, 0, 0.06); padding-top: 20px;">
+                    <button id="manage-config-btn" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 6px 12px; display: none;">
+                        ⚙️ Manage Firebase Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Shortify. Built by Mr. Rager & 3Strong Inc.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { configured, clearFirebaseConfig } from "./firebase.js";
+        import { initAuthGuard, loginAdmin, showConfigOverlay, showToast } from "./auth.js";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Check auth status & redirect if logged in
+            initAuthGuard("login");
+            
+            const warningBox = document.getElementById("firebase-warning-box");
+            const manageConfigBtn = document.getElementById("manage-config-btn");
+            const loginForm = document.getElementById("login-form");
+
+            if (!configured) {
+                // If not configured, show warning block and trigger configuration click handlers
+                warningBox.style.display = "flex";
+                document.getElementById("trigger-setup-btn").addEventListener("click", showConfigOverlay);
+                
+                // Disable login form until configured
+                loginForm.querySelectorAll("input, button").forEach(el => el.disabled = true);
+            } else {
+                // Configured, show option to reset/change config
+                manageConfigBtn.style.display = "inline-block";
+                manageConfigBtn.addEventListener("click", () => {
+                    if (confirm("Do you want to clear your saved Firebase configuration? You will need to re-configure on next reload.")) {
+                        clearFirebaseConfig();
+                    }
+                });
+            }
+
+            // Bind Form Submit
+            loginForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById("login-email").value.trim();
+                const password = document.getElementById("login-password").value;
+                const submitBtn = document.getElementById("login-submit-btn");
+
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `<div class="spinner" style="margin:0 auto;"></div>`;
+
+                try {
+                    await loginAdmin(email, password);
+                } catch (err) {
+                    console.error("Login call error:", err);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
