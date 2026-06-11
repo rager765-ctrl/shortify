@@ -2,15 +2,15 @@
   "cleanUrls": true,
   "routes": [
     {
-      "src": "^/(dashboard|login|signup)$",
+      "src": "/(style\\.css|firebase\\.js|redirect\\.js|shorten\\.js|auth\\.js|dashboard\\.js|icon\\.svg|urban_doodle_art\\.png|african_heritage_banner\\.png)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(dashboard|login|signup)",
       "dest": "/$1.html"
     },
     {
-      "src": "^/.*\\..*$",
-      "dest": "$0"
-    },
-    {
-      "src": "^/.*$",
+      "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
