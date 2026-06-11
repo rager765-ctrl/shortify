@@ -1,4 +1,4 @@
-const CACHE_NAME = "shortify-v7";
+const CACHE_NAME = "shortify-v9";
 const ASSETS = [
     "./",
     "./index.html",
@@ -11,7 +11,7 @@ const ASSETS = [
     "./dashboard.js",
     "./shorten.js",
     "./redirect.js",
-    "./african_heritage_banner.png",
+    "./urban_doodle_art.png",
     "./icon.svg",
     "./manifest.json",
     "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
@@ -56,6 +56,24 @@ self.addEventListener("fetch", (e) => {
         e.request.url.includes("securetoken.googleapis.com")
     ) {
         return;
+    }
+
+    // Handle navigation requests for short link routing (PWA offline-first SPA routing)
+    if (e.request.mode === "navigate") {
+        const url = new URL(e.request.url);
+        const path = url.pathname.replace(/^\/|\/$/g, "");
+        const reservedPaths = ["index.html", "dashboard.html", "login.html", "signup.html", "login", "dashboard", "signup", "css", "js", "assets"];
+        const isStaticFile = path.includes(".") || reservedPaths.some(p => path.startsWith(p));
+
+        if (path && !isStaticFile) {
+            // Serve index.html from cache to handle the short code redirection client-side
+            e.respondWith(
+                caches.match("./index.html").then((cachedIndex) => {
+                    return cachedIndex || fetch(e.request);
+                })
+            );
+            return;
+        }
     }
 
     e.respondWith(

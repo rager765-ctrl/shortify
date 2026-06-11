@@ -2,7 +2,7 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/:path*",
+      "source": "/((?!login|dashboard|signup|.*\\.).*)",
       "destination": "/index.html"
     }
   ]
