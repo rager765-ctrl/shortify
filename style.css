@@ -1167,3 +1167,10 @@ footer p {
         padding: 8px;
     }
 }
+
+/* Prevent automatic page zoom when focusing inputs on iOS / mobile devices */
+@media (max-width: 768px) {
+    input, select, textarea, .form-control, .input-group input {
+        font-size: 16px !important;
+    }
+}
