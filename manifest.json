@@ -2,7 +2,7 @@
   "name": "Enly | Premium URL Shortener",
   "short_name": "Enly",
   "description": "Shorten links, create custom QR codes, design event badges, and track real-time statistics.",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f4f5f8",
   "theme_color": "#d97706",

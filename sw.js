@@ -1,12 +1,19 @@
-const CACHE_NAME = "enly-v1";
+const CACHE_NAME = "enly-v2";
 const ASSETS_TO_CACHE = [
+  "./",
   "./index.html",
+  "./about",
   "./about.html",
+  "./qr-generator",
   "./qr-generator.html",
+  "./badge-generator",
   "./badge-generator.html",
+  "./login",
   "./login.html",
+  "./signup",
   "./signup.html",
-  "./404.html",
+  "./dashboard",
+  "./dashboard.html",
   "./style.css",
   "./icon.svg",
   "./african_heritage_banner.png",
@@ -15,16 +22,21 @@ const ASSETS_TO_CACHE = [
   "./shorten.js",
   "./redirect.js",
   "./firebase.js",
-  "./dashboard.js",
-  "./dashboard.html"
+  "./dashboard.js"
 ];
 
-// Install Event - Pre-cache assets
+// Install Event - Pre-cache assets, resilient to individual routing failures
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("[Service Worker] Caching static assets");
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Prevent install failure if some cleanUrls/html versions return redirects (Vercel cleanUrls behavior)
+      const cachePromises = ASSETS_TO_CACHE.map((url) => {
+        return cache.add(url).catch((err) => {
+          console.warn(`[Service Worker] Skipping cache for: ${url}`, err);
+        });
+      });
+      return Promise.all(cachePromises);
     })
   );
   self.skipWaiting();
@@ -64,7 +76,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch background refresh
+        // Fetch background refresh to update cache in place
         fetch(event.request)
           .then((networkResponse) => {
             if (networkResponse.status === 200) {
@@ -81,7 +93,7 @@ self.addEventListener("fetch", (event) => {
       return fetch(event.request).catch(() => {
         // Offline navigate fallback
         if (event.request.mode === "navigate") {
-          return caches.match("./index.html");
+          return caches.match("./") || caches.match("./index.html");
         }
       });
     })
