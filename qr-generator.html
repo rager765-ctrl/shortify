@@ -343,13 +343,19 @@
     <header>
         <div class="container">
             <a href="index.html" class="logo">
-                <div class="logo-icon">🔗</div>
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </div>
                 <span>Enly</span>
             </a>
             <nav class="nav-links">
                 <a href="index.html" class="nav-link hide-mobile">Shortener</a>
                 <a href="qr-generator.html" class="nav-link active">Custom QR</a>
                 <a href="badge-generator.html" class="nav-link">Event Badges</a>
+                <a href="about.html" class="nav-link">About &amp; Help</a>
                 <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
             </nav>
 
@@ -619,9 +625,15 @@
                             <label class="form-label" for="logo-margin-input">Logo Inner Margin (px)</label>
                             <input type="number" id="logo-margin-input" class="form-control" value="6" min="0" max="20">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px; padding-top: 25px;">
-                            <input type="checkbox" id="logo-clear-dots-checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent);">
-                            <label for="logo-clear-dots-checkbox" style="font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">Clear background dots</label>
+                        <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 15px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="logo-clear-dots-checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent);">
+                                <label for="logo-clear-dots-checkbox" style="font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">Clear background dots</label>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="logo-circular-checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent);">
+                                <label for="logo-circular-checkbox" style="font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">Circular crop logo</label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -676,8 +688,74 @@
         // Global variables for generator
         let qrCodeStyling = null;
         let selectedPreset = 'default';
-        let logoImageSrc = ''; // Base64 data url for logo
+        let rawLogoImageSrc = ''; // Raw base64 or path
+        let processedLogoImageSrc = ''; // Processed (cropped or original)
         let useSeparateCornerColors = false;
+
+        // Helper function to crop custom logo to circular shape
+        function cropImageToCircle(dataUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = Math.min(img.width, img.height);
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Center crop square
+                    const sourceX = (img.width - size) / 2;
+                    const sourceY = (img.height - size) / 2;
+                    
+                    // 1. Draw a solid white background circle (ensures contrast on dark/gradient backgrounds)
+                    ctx.beginPath();
+                    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    
+                    // 2. Create a slightly smaller clipping path to draw the image (giving a clean white border)
+                    const borderWidth = Math.max(2, Math.round(size * 0.03)); // 3% border
+                    const clipRadius = (size / 2) - borderWidth;
+                    
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(size / 2, size / 2, clipRadius, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.clip();
+                    
+                    // 3. Draw the image inside the clipped inner circle
+                    ctx.drawImage(img, sourceX, sourceY, size, size, 0, 0, size, size);
+                    ctx.restore();
+                    
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = (err) => {
+                    reject(err);
+                };
+                img.src = dataUrl;
+            });
+        }
+
+        // Process logo based on crop preference
+        async function processLogo() {
+            const circularCrop = document.getElementById('logo-circular-checkbox')?.checked;
+            if (!rawLogoImageSrc) {
+                processedLogoImageSrc = '';
+                return;
+            }
+            if (!circularCrop) {
+                processedLogoImageSrc = rawLogoImageSrc;
+                return;
+            }
+            try {
+                processedLogoImageSrc = await cropImageToCircle(rawLogoImageSrc);
+            } catch (e) {
+                console.error("Error cropping image:", e);
+                processedLogoImageSrc = rawLogoImageSrc; // fallback
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             // Check if there's a custom URL passed in query params
@@ -781,11 +859,20 @@
                 });
             });
 
+            // Circular crop toggle event listener
+            const circularCheckbox = document.getElementById('logo-circular-checkbox');
+            if (circularCheckbox) {
+                circularCheckbox.addEventListener('change', async () => {
+                    await processLogo();
+                    updateQRCode();
+                });
+            }
+
             // Logo Branding presets
             const logoBtns = document.querySelectorAll('.logo-preset-btn');
             const fileUploadText = document.querySelector('#logo-upload-area .upload-text');
             logoBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', async () => {
                     logoBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     
@@ -796,17 +883,20 @@
                     fileUploadText.innerText = "Upload Custom Logo";
                     
                     if (logoType === 'none') {
-                        logoImageSrc = '';
+                        rawLogoImageSrc = '';
+                        await processLogo();
                         updateQRCode();
                     } else if (logoType === 'enly') {
                         // Create a SVG data URL representing Enly's logo icon: 🔗
-                        logoImageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="20" fill="black"/><text y="0.85em" x="0.1em" font-size="70" fill="white">🔗</text></svg>';
+                        rawLogoImageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="20" fill="black"/><text y="0.85em" x="0.1em" font-size="70" fill="white">🔗</text></svg>';
+                        await processLogo();
                         updateQRCode();
                     } else {
                         // Find the image inside the button and copy source
                         const img = btn.querySelector('img');
                         if (img) {
-                            logoImageSrc = img.src;
+                            rawLogoImageSrc = img.src;
+                            await processLogo();
                             updateQRCode();
                         }
                     }
@@ -827,8 +917,9 @@
                 logoBtns.forEach(b => b.classList.remove('active'));
                 
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    logoImageSrc = event.target.result;
+                reader.onload = async (event) => {
+                    rawLogoImageSrc = event.target.result;
+                    await processLogo();
                     updateQRCode();
                     showToast("Custom logo uploaded successfully!", "success");
                 };
@@ -987,7 +1078,7 @@
             const options = {
                 width: 300,
                 height: 300,
-                type: 'svg',
+                type: 'canvas',
                 data: dataText,
                 margin: margin,
                 qrOptions: {
@@ -1004,8 +1095,8 @@
             };
 
             // Include logo if set
-            if (logoImageSrc) {
-                options.image = logoImageSrc;
+            if (processedLogoImageSrc) {
+                options.image = processedLogoImageSrc;
                 options.imageOptions = {
                     crossOrigin: 'anonymous',
                     hideBackgroundDots: clearDots,
@@ -1134,8 +1225,8 @@
                     cornersDotOptions: cornersDotOptions
                 };
 
-                if (logoImageSrc) {
-                    downloadOptions.image = logoImageSrc;
+                if (processedLogoImageSrc) {
+                    downloadOptions.image = processedLogoImageSrc;
                     downloadOptions.imageOptions = {
                         crossOrigin: 'anonymous',
                         hideBackgroundDots: clearDots,
@@ -1159,6 +1250,43 @@
                 showToast("Error generating download.", "error");
             }
         }
+    </script>
+
+    <!-- Floating Navigation Pill -->
+    <div class="floating-nav-pill">
+        <button class="nav-pill-btn" id="pill-back-btn" title="Go Back">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span class="nav-pill-label">Back</span>
+        </button>
+        <div class="nav-pill-divider"></div>
+        <a href="index.html" class="nav-pill-btn" id="pill-home-btn" title="Go to Shortener (Home)">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="nav-pill-label">Home</span>
+        </a>
+    </div>
+    
+    <script>
+        // Floating pill navigation behavior
+        (function() {
+            const backBtn = document.getElementById("pill-back-btn");
+            if (backBtn) {
+                if (document.referrer === "" || !document.referrer.includes(window.location.host)) {
+                    backBtn.style.display = "none";
+                    const divider = document.querySelector(".nav-pill-divider");
+                    if (divider) divider.style.display = "none";
+                } else {
+                    backBtn.addEventListener("click", () => {
+                        window.history.back();
+                    });
+                }
+            }
+        })();
     </script>
 </body>
 </html>

@@ -42,13 +42,19 @@
     <header>
         <div class="container">
             <a href="index.html" class="logo">
-                <div class="logo-icon">🔗</div>
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </div>
                 <span>Enly</span>
             </a>
             <nav class="nav-links">
                 <a href="index.html" class="nav-link active hide-mobile">Shortener</a>
                 <a href="qr-generator.html" class="nav-link">Custom QR</a>
                 <a href="badge-generator.html" class="nav-link hide-mobile">Event Badges</a>
+                <a href="about.html" class="nav-link">About &amp; Help</a>
                 <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
             </nav>
         </div>
@@ -281,7 +287,7 @@
                     if (prefixSpan) prefixSpan.innerText = "Hide ";
                     // Generate on display to avoid WebKit dimension measurement bug
                     if (currentShortUrl) {
-                        generateQRCode("qrcode", `${window.location.protocol}//${currentShortUrl}`);
+                        generateQRCode("qrcode", `${window.location.protocol}//${currentShortUrl}?ref=qr`);
                     }
                 } else {
                     qrResultContainer.style.display = "none";

@@ -117,18 +117,28 @@ export async function checkRedirect() {
                 // Fetch IP hash for click logs
                 const ipHash = await getIPHash();
                 
+                // Check if the link was accessed via a QR code (search params or hash params)
+                const hashQuery = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : "";
+                const allParams = new URLSearchParams(window.location.search + (hashQuery ? "&" + hashQuery : ""));
+                const isQR = allParams.get("ref") === "qr" || allParams.get("src") === "qr";
+                
                 // 3. Record click in clicks collection
                 const clickRef = collection(db, "clicks");
                 await addDoc(clickRef, {
                     shortCode: shortCode,
                     timestamp: serverTimestamp(),
-                    ipHash: ipHash
+                    ipHash: ipHash,
+                    isQR: isQR
                 });
                 
                 // 4. Increment clicks count in the URL document
-                await updateDoc(docRef, {
+                const updateData = {
                     clicks: increment(1)
-                });
+                };
+                if (isQR) {
+                    updateData.qrClicks = increment(1);
+                }
+                await updateDoc(docRef, updateData);
                 
                 // 5. Navigate to original long URL
                 window.location.replace(targetUrl);

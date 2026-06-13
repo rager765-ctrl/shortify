@@ -108,10 +108,12 @@ function setupRealtimeListeners() {
 function calculateStats() {
     const totalLinks = urlsData.length;
     let totalClicks = 0;
+    let qrScans = 0;
     let activeLinks = 0;
     
     urlsData.forEach(url => {
         totalClicks += url.clicks || 0;
+        qrScans += url.qrClicks || 0;
         if (url.active !== false) {
             activeLinks++;
         }
@@ -120,10 +122,12 @@ function calculateStats() {
     const totalLinksEl = document.getElementById("stat-total-links");
     const totalClicksEl = document.getElementById("stat-total-clicks");
     const activeLinksEl = document.getElementById("stat-active-links");
+    const qrScansEl = document.getElementById("stat-qr-scans");
     
     if (totalLinksEl) totalLinksEl.innerText = totalLinks.toLocaleString();
     if (totalClicksEl) totalClicksEl.innerText = totalClicks.toLocaleString();
     if (activeLinksEl) activeLinksEl.innerText = activeLinks.toLocaleString();
+    if (qrScansEl) qrScansEl.innerText = qrScans.toLocaleString();
 }
 
 function renderUrlsTable(filterQuery = "") {
@@ -270,11 +274,17 @@ async function showAnalytics(code) {
                 </div>
             </div>
 
-            <div class="d-flex justify-between" style="border-top: 1px solid var(--card-border); padding-top: 15px;">
+            <div class="d-flex justify-between align-center" style="border-top: 1px solid var(--card-border); padding-top: 15px; gap: 15px; flex-wrap: wrap;">
                 <div>
                     <div style="font-size: 12px; color: var(--text-muted);">Total Clicks</div>
                     <div style="font-size: 24px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--primary);">
                         ${(urlData.clicks || 0).toLocaleString()}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted);">QR Code Scans</div>
+                    <div style="font-size: 24px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--accent);">
+                        ${(urlData.qrClicks || 0).toLocaleString()}
                     </div>
                 </div>
                 <div>
@@ -373,6 +383,11 @@ function openViewModal(code) {
     document.getElementById("view-long-url").href = urlData.longUrl;
     document.getElementById("view-clicks").innerText = (urlData.clicks || 0).toLocaleString();
     
+    const qrClicksEl = document.getElementById("view-qr-clicks");
+    if (qrClicksEl) {
+        qrClicksEl.innerText = (urlData.qrClicks || 0).toLocaleString();
+    }
+    
     // Download QR listener
     const downloadBtn = document.getElementById("download-qr-btn");
     // Replace listener
@@ -387,7 +402,7 @@ function openViewModal(code) {
 
     // Generate QR after modal display animation finishes to ensure proper rendering context
     setTimeout(() => {
-        generateQRCode("view-qrcode", `${window.location.protocol}//${shortUrl}`);
+        generateQRCode("view-qrcode", `${window.location.protocol}//${shortUrl}?ref=qr`);
     }, 50);
 }
 

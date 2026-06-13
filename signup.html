@@ -25,13 +25,19 @@
     <header>
         <div class="container">
             <a href="index.html" class="logo">
-                <div class="logo-icon">🔗</div>
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </div>
                 <span>Enly</span>
             </a>
             <nav class="nav-links">
                 <a href="index.html" class="nav-link">Shortener</a>
                 <a href="qr-generator.html" class="nav-link">Custom QR</a>
                 <a href="badge-generator.html" class="nav-link">Event Badges</a>
+                <a href="about.html" class="nav-link">About &amp; Help</a>
             </nav>
         </div>
     </header>
@@ -52,7 +58,10 @@
 
                 <!-- Registration Disabled Alert -->
                 <div id="registration-disabled-box" class="config-notice-card" style="display: none; border-color: var(--danger); background: rgba(239, 68, 68, 0.04);">
-                    <h4 style="color: var(--danger); font-size: 14px; margin-bottom: 6px;">🚫 Sign Up Disabled</h4>
+                    <h4 style="display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 14px; margin-bottom: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                        Sign Up Disabled
+                    </h4>
                     <p style="font-size: 12px; margin: 0; color: var(--text-secondary); line-height: 1.5;">
                         Administrator registration is currently disabled by the system owner. If you are the owner, you can enable it from the dashboard settings.
                     </p>
@@ -60,7 +69,10 @@
 
                 <!-- Setup Alert -->
                 <div id="firebase-warning-box" class="config-notice-card" style="display: none;">
-                    <h4>⚠️ Setup Required</h4>
+                    <h4 style="display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 6px; color: var(--warning);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        Setup Required
+                    </h4>
                     <p style="font-size: 12px; margin: 0; color: var(--text-secondary);">
                         Firebase configuration is missing or holds placeholder values. Set up configuration using the button below.
                     </p>
@@ -192,6 +204,43 @@
                 }
             });
         });
+    </script>
+
+    <!-- Floating Navigation Pill -->
+    <div class="floating-nav-pill">
+        <button class="nav-pill-btn" id="pill-back-btn" title="Go Back">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span class="nav-pill-label">Back</span>
+        </button>
+        <div class="nav-pill-divider"></div>
+        <a href="index.html" class="nav-pill-btn" id="pill-home-btn" title="Go to Shortener (Home)">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="nav-pill-label">Home</span>
+        </a>
+    </div>
+    
+    <script>
+        // Floating pill navigation behavior
+        (function() {
+            const backBtn = document.getElementById("pill-back-btn");
+            if (backBtn) {
+                if (document.referrer === "" || !document.referrer.includes(window.location.host)) {
+                    backBtn.style.display = "none";
+                    const divider = document.querySelector(".nav-pill-divider");
+                    if (divider) divider.style.display = "none";
+                } else {
+                    backBtn.addEventListener("click", () => {
+                        window.history.back();
+                    });
+                }
+            }
+        })();
     </script>
 </body>
 </html>
