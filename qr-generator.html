@@ -224,8 +224,24 @@
 
         @media (max-width: 640px) {
             .preview-box {
-                padding: 16px;
+                padding: 12px;
                 border-radius: var(--radius-md);
+                overflow: hidden;
+            }
+            .preview-canvas-container {
+                width: 100%;
+                overflow: hidden;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            /* Force the library-rendered SVG/canvas to scale to container width */
+            .preview-canvas-container svg,
+            .preview-canvas-container canvas {
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+                display: block;
             }
             .preview-sticky {
                 gap: 14px;
@@ -233,6 +249,16 @@
             .option-grid {
                 grid-template-columns: 1fr;
             }
+            /* Stack export buttons vertically */
+            .download-btn-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .download-btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
         /* Polished file upload button styling */
@@ -597,7 +623,7 @@
                         </select>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="download-btn-grid">
                         <button type="button" class="btn btn-primary" id="download-png-btn" style="padding: 12px 0;">
                             <span>Download PNG</span>
                         </button>
