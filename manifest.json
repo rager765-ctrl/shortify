@@ -1,7 +1,7 @@
 {
-  "name": "Shortify",
-  "short_name": "Shortify",
-  "description": "Premium SaaS URL Shortener",
+  "name": "Enly | Premium URL Shortener",
+  "short_name": "Enly",
+  "description": "Shorten links, create custom QR codes, design event badges, and track real-time statistics.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f4f5f8",
@@ -17,8 +17,14 @@
     {
       "src": "icon.svg",
       "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "maskable"
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 }
