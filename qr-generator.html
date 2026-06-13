@@ -201,9 +201,37 @@
             .preview-sticky {
                 position: static;
                 order: -1;
+                width: 100%;
+                align-items: center;
             }
             .preview-box {
                 max-width: 100%;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 20px;
+                min-height: unset;
+                justify-content: center;
+            }
+            .preview-canvas-container {
+                justify-content: center;
+            }
+            .preview-sticky > .card {
+                max-width: 100%;
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .preview-box {
+                padding: 16px;
+                border-radius: var(--radius-md);
+            }
+            .preview-sticky {
+                gap: 14px;
+            }
+            .option-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -557,7 +585,7 @@
                     </div>
                 </div>
 
-                <div class="card" style="width: 100%; max-width: 380px; padding: 25px;">
+                <div class="card" style="width: 100%; padding: 25px; box-sizing: border-box;">
                     <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-primary);">Export Options</h3>
                     
                     <div class="form-group">
