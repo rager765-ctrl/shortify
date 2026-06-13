@@ -22,18 +22,17 @@
     <meta property="og:image" content="icon.svg">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <meta name="theme-color" content="#d97706">
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script>
-        // Register PWA Service Worker
+        // Unregister existing Service Workers (legacy PWA cleanup — silent, no reload)
         if ("serviceWorker" in navigator) {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register("./sw.js")
-                    .then((reg) => console.log("Service Worker registered successfully:", reg.scope))
-                    .catch((err) => console.log("Service Worker registration failed:", err));
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                for (let reg of registrations) {
+                    reg.unregister();
+                }
             });
         }
     </script>

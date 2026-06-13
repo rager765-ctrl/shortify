@@ -49,14 +49,9 @@ export async function checkRedirect() {
     const queryCode = urlParams.get("c") || urlParams.get("code");
     
     const reservedPaths = [
-        "index", "index.html",
-        "about", "about.html",
-        "dashboard", "dashboard.html",
-        "login", "login.html",
-        "signup", "signup.html",
-        "qr-generator", "qr-generator.html",
-        "badge-generator", "badge-generator.html",
-        "404.html", "css", "js", "assets", "style.css", "firebase.js",
+        "index.html", "dashboard.html", "login.html", "signup.html",
+        "404.html", "qr-generator", "badge-generator",
+        "css", "js", "assets", "style.css", "firebase.js",
         "redirect.js", "shorten.js", "auth.js", "dashboard.js"
     ];
     const isStaticFile = path.includes(".") || reservedPaths.some(p => path.startsWith(p));

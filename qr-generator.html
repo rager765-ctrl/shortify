@@ -6,18 +6,8 @@
     <title>Enly | Custom QR Code Generator</title>
     <meta name="description" content="Generate highly customized, branded, and modern promotional QR codes with logos, custom colors, and gradients.">
     <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <meta name="theme-color" content="#d97706">
-    <script>
-        if ("serviceWorker" in navigator) {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register("./sw.js")
-                    .then((reg) => console.log("Service Worker registered successfully:", reg.scope))
-                    .catch((err) => console.log("Service Worker registration failed:", err));
-            });
-        }
-    </script>
     <!-- Load qr-code-styling library -->
     <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     <style>
