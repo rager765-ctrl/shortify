@@ -48,10 +48,18 @@ export async function checkRedirect() {
     const urlParams = new URLSearchParams(window.location.search);
     const queryCode = urlParams.get("c") || urlParams.get("code");
     
-    const reservedPaths = ["index.html", "dashboard.html", "login.html", "signup.html", "css", "js", "assets"];
+    const reservedPaths = [
+        "index.html", "dashboard.html", "login.html", "signup.html",
+        "404.html", "qr-generator", "badge-generator",
+        "css", "js", "assets", "style.css", "firebase.js",
+        "redirect.js", "shorten.js", "auth.js", "dashboard.js"
+    ];
     const isStaticFile = path.includes(".") || reservedPaths.some(p => path.startsWith(p));
+
+    // Ignore hash fragments that look like plain anchors (e.g. #top, #section1, or pure numbers)
+    const isPlainAnchor = hashCode && (hashCode.length < 3 || /^\d+$/.test(hashCode));
     
-    const shortCode = hashCode || queryCode || (path && !isStaticFile ? path : null);
+    const shortCode = (!isPlainAnchor && hashCode) || queryCode || (path && !isStaticFile ? path : null);
     
     if (!shortCode) {
         // No redirect needed, display the normal shorten interface

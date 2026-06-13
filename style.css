@@ -538,6 +538,28 @@ header .container {
 
 @media (max-width: 640px) {
     .nav-links {
+        display: flex !important;
+        gap: 6px !important;
+        overflow-x: auto;
+        white-space: nowrap;
+        max-width: 70%;
+        padding: 4px 0;
+        scrollbar-width: none;
+        align-items: center;
+    }
+    .nav-links::-webkit-scrollbar {
+        display: none;
+    }
+    .nav-link {
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+    }
+    .nav-links .btn {
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+        height: auto !important;
+    }
+    .hide-mobile {
         display: none !important;
     }
     .dashboard-grid {

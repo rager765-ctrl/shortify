@@ -21,7 +21,16 @@ const server = http.createServer((req, res) => {
     const cleanUrl = req.url.split('?')[0].split('#')[0];
     
     let filePath = path.join(__dirname, cleanUrl === '/' ? 'index.html' : cleanUrl);
-    const ext = path.extname(filePath);
+    let ext = path.extname(filePath);
+    
+    // Support Vercel-like Clean URLs (e.g., /qr-generator -> /qr-generator.html)
+    if (!ext && cleanUrl !== '/') {
+        const htmlPath = filePath + '.html';
+        if (fs.existsSync(htmlPath)) {
+            filePath = htmlPath;
+            ext = '.html';
+        }
+    }
     
     // Check if the file exists
     fs.access(filePath, fs.constants.F_OK, (err) => {

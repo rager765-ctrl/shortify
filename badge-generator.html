@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enly | Premium Event Badge Creator</title>
+    <meta name="description" content="Design and print customized event badges, inspired by the official 3iAfrica Summit badge layouts, with custom photos, categories, and QR codes.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <meta name="theme-color" content="#d97706">
+    <!-- Load qr-code-styling library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <!-- Load html2canvas for high quality PNG export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .badge-layout {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+            align-items: start;
+        }
+
+        .badge-preview-container {
+            position: sticky;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* 3D and premium card effects */
+        .badge-perspective {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Lanyard representation */
+        .badge-lanyard-hanger {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: -15px;
+            position: relative;
+            z-index: 5;
+            width: 100%;
+        }
+
+        .lanyard-strap {
+            width: 24px;
+            height: 60px;
+            background: #0f172a;
+            border-radius: 4px 4px 0 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+            transition: background 0.3s ease;
+        }
+
+        .lanyard-clip {
+            width: 16px;
+            height: 16px;
+            background: #94a3b8;
+            border-radius: 50%;
+            border: 3px solid #cbd5e1;
+            margin-top: -6px;
+            z-index: 6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        /* The Badge Card Design (Vertical 4"x6" ratio) */
+        .badge-card {
+            width: 340px;
+            height: 510px;
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: transform 0.1s ease-out, border-radius 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            background-color: #ffffff;
+        }
+
+        /* Glassmorphism simulation overlay */
+        .glass-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(10px);
+            z-index: 1;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Border customizer options */
+        .badge-card.border-glow {
+            border: 2px solid #a855f7 !important;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6), 0 15px 35px rgba(0,0,0,0.15) !important;
+        }
+        
+        .badge-card.border-gold {
+            border: 3px solid transparent !important;
+            background-image: linear-gradient(#ffffff, #ffffff), linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #f59e0b 100%) !important;
+            background-origin: border-box !important;
+            background-clip: padding-box, border-box !important;
+            box-shadow: 0 10px 25px rgba(217, 119, 6, 0.15) !important;
+        }
+        
+        /* Dark mode variant for gold border */
+        .badge-card.border-gold.dark-theme-active {
+            background-image: linear-gradient(#0b0f19, #0b0f19), linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #f59e0b 100%) !important;
+        }
+
+        .badge-card.border-heavy {
+            border: 3px solid #000000 !important;
+            box-shadow: 0 10px 0px rgba(0,0,0,1) !important;
+        }
+
+        .badge-card.border-none {
+            border: none !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+        }
+
+        /* Diagonal Ribbon Style */
+        .badge-ribbon {
+            position: absolute;
+            top: 18px;
+            right: -32px;
+            background: #ef4444;
+            color: white;
+            transform: rotate(45deg);
+            width: 120px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 0;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        /* Card Header */
+        .badge-header {
+            height: 120px;
+            position: relative;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 15px;
+            z-index: 2;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .badge-header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.35;
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+
+        .badge-header-logo-icon {
+            font-size: 26px;
+            margin-bottom: 2px;
+            z-index: 2;
+        }
+
+        .badge-header-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #ffffff;
+            line-height: 1.2;
+            z-index: 2;
+        }
+
+        .badge-header-subtitle {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 2px;
+            z-index: 2;
+        }
+
+        /* Top Kente/Gold Stripe */
+        .badge-accent-stripe {
+            height: 6px;
+            width: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #fbbf24 50%, #ef4444 100%);
+            position: relative;
+            z-index: 3;
+            transition: all 0.3s ease;
+        }
+
+        /* Photo Area */
+        .badge-photo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .badge-photo {
+            width: 125px;
+            height: 125px;
+            border-radius: 50%;
+            border: 4px solid #10b981; /* Dynamically changed */
+            object-fit: cover;
+            background: #f1f5f9;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: var(--transition-normal);
+        }
+
+        .badge-photo.square {
+            border-radius: var(--radius-md);
+        }
+
+        .badge-photo-placeholder {
+            width: 125px;
+            height: 125px;
+            border-radius: 50%;
+            border: 4px solid #10b981;
+            background: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 32px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: var(--transition-normal);
+        }
+
+        .badge-photo-placeholder.square {
+            border-radius: var(--radius-md);
+        }
+
+        /* Attendee Info */
+        .badge-info-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 15px 20px 10px 20px;
+            flex: 1;
+            z-index: 2;
+        }
+
+        .badge-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 21px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 2px;
+            line-height: 1.2;
+            word-break: break-word;
+            max-width: 280px;
+            transition: all 0.3s ease;
+        }
+
+        .badge-role-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            line-height: 1.3;
+            max-width: 280px;
+            transition: all 0.3s ease;
+        }
+
+        .badge-company {
+            font-size: 12px;
+            font-weight: 700;
+            color: #d97706; /* Dynamically changes */
+            margin-top: 1px;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+        }
+
+        /* Badge Bottom QR & Accent */
+        .badge-qr-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            z-index: 2;
+        }
+
+        .badge-qr-frame {
+            background: #ffffff;
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Bottom Status/Role Bar */
+        .badge-footer-bar {
+            width: 100%;
+            height: 52px;
+            background: #10b981; /* Dynamically set based on category */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-top: auto;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .badge-footer-bar::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: rgba(0,0,0,0.12);
+        }
+
+        .badge-footer-bar::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: rgba(0,0,0,0.12);
+        }
+
+        /* Decorative Tribal Watermark */
+        .badge-watermark {
+            position: absolute;
+            right: -20px;
+            bottom: 60px;
+            width: 130px;
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Control inputs customization */
+        .avatar-presets {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .avatar-preset-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            transition: var(--transition-fast);
+        }
+
+        .avatar-preset-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-preset-btn.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+        }
+
+        /* Theme Option Blocks */
+        .theme-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .theme-option {
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .theme-option:hover {
+            background: rgba(0,0,0,0.02);
+            border-color: var(--accent);
+        }
+
+        .theme-option.active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .theme-title {
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .theme-preview-colors {
+            display: flex;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 900px) {
+            .badge-layout {
+                grid-template-columns: 1fr;
+            }
+            .badge-preview-container {
+                position: static;
+                order: -1;
+            }
+        }
+
+        /* PRINT STYLING - Hides everything except the badge card */
+        @media print {
+            body {
+                background: none;
+                background-image: none;
+                margin: 0;
+                padding: 0;
+            }
+            header, footer, main > section, .card:not(.badge-preview-container), .badge-preview-container > *:not(.badge-perspective), .mobile-menu-btn, .badge-lanyard-hanger {
+                display: none !important;
+            }
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .badge-layout {
+                display: block;
+                margin: 0;
+            }
+            .badge-preview-container {
+                position: static;
+                display: block;
+                padding: 0;
+                margin: 0;
+            }
+            .badge-perspective {
+                max-width: none;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+            .badge-card {
+                box-shadow: none;
+                border: none;
+                transform: none !important;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Polished file upload button styling */
+        .custom-file-upload {
+            position: relative;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .custom-file-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        .upload-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border: 2px dashed rgba(99, 102, 241, 0.25);
+            border-radius: var(--radius-md);
+            background: rgba(99, 102, 241, 0.02);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+        }
+
+        .custom-file-upload:hover .upload-area {
+            border-color: var(--accent);
+            background: rgba(168, 85, 247, 0.05);
+            color: var(--accent);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
+        }
+
+        .upload-area svg {
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-file-upload:hover .upload-area svg {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🔗</div>
+                <span>Enly</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link hide-mobile">Shortener</a>
+                <a href="qr-generator.html" class="nav-link">Custom QR</a>
+                <a href="badge-generator.html" class="nav-link active">Event Badges</a>
+                <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-btn" id="mobile-menu-btn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-primary);">
+                ☰
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content wrapper -->
+    <main class="container" style="flex: 1;">
+        
+        <!-- Hero Section -->
+        <section class="hero animate-fade" style="padding-top: 40px; padding-bottom: 20px;">
+            <h1>Create custom attendee <br><span style="background: linear-gradient(135deg, #10b981, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Summit Event Badges</span></h1>
+            <p style="font-size: 15px; margin-bottom: 0; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Create stunning event badges for BIT KNUST and beyond. Customize attendee names, profile pictures, categories, and generate embedded QR passes.
+            </p>
+        </section>
+
+        <!-- Generator Layout -->
+        <div class="badge-layout">
+            
+            <!-- Left Panel: Controls Form -->
+            <div class="card control-section animate-fade">
+                
+                <!-- Section: Attendee Information -->
+                <div class="option-group">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        1. Attendee Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="badge-name-input">Full Name</label>
+                        <input type="text" id="badge-name-input" class="form-control" value="Kelvin Boateng" placeholder="e.g. Kelvin Boateng">
+                    </div>
+
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-title-input">Job Title</label>
+                            <input type="text" id="badge-title-input" class="form-control" value="Software Developer &amp; AI Engineer" placeholder="e.g. Co-Founder">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-company-input">Company / Organization</label>
+                            <input type="text" id="badge-company-input" class="form-control" value="BIT, KNUST" placeholder="e.g. BIT, KNUST">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Photo Upload -->
+                <div class="option-group">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        2. Attendee Photo
+                    </h3>
+                    
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-photo-upload">Upload Custom Photo</label>
+                            <div class="custom-file-upload">
+                                <input type="file" id="badge-photo-upload" accept="image/*">
+                                <div class="upload-area" id="badge-photo-upload-area">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    <span class="upload-text">Upload Photo</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Or Choose Placeholder Avatar</label>
+                            <div class="avatar-presets">
+                                <button type="button" class="avatar-preset-btn active" data-avatar="kb" style="background: linear-gradient(135deg, #1e293b, #0f172a); font-weight:700; font-size:12px;">KB</button>
+                                <button type="button" class="avatar-preset-btn" data-avatar="m" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: flex; align-items: center; justify-content: center;" title="Male Professional Silhouette">
+                                    <svg viewBox="0 0 64 64" fill="currentColor" style="width: 18px; height: 18px; color: white;"><circle cx="32" cy="22" r="10"/><path d="M32 36c-9.94 0-18 8.06-18 18h36c0-9.94-8.06-18-18-18z"/></svg>
+                                </button>
+                                <button type="button" class="avatar-preset-btn" data-avatar="w" style="background: linear-gradient(135deg, #ec4899, #be185d); display: flex; align-items: center; justify-content: center;" title="Female Professional Silhouette">
+                                    <svg viewBox="0 0 64 64" fill="currentColor" style="width: 18px; height: 18px; color: white;"><path d="M32 10c-6.63 0-12 5.37-12 12a11.95 11.95 0 0 0 3.32 8.24c-5.74 2.15-9.32 6.55-9.32 11.76h36c0-5.21-3.58-9.61-9.32-11.76A11.95 11.95 0 0 0 44 22c0-6.63-5.37-12-12-12z"/></svg>
+                                </button>
+                                <button type="button" class="avatar-preset-btn" data-avatar="tech" style="background: linear-gradient(135deg, #10b981, #047857); display: flex; align-items: center; justify-content: center;" title="Developer Laptop">
+                                    <svg viewBox="0 0 64 64" fill="currentColor" style="width: 18px; height: 18px; color: white;"><path d="M48 14H16c-2.2 0-4 1.8-4 4v22c0 2.2 1.8 4 4 4h32c2.2 0 4-1.8 4-4V18c0-2.2-1.8-4-4-4zm-2 26H18V18h28v22zM14 46h36v4H14z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Access Category -->
+                <div class="option-group">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        3. Access Category (Role)
+                    </h3>
+                    
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-category-select">Select Category</label>
+                            <select id="badge-category-select" class="form-control">
+                                <option value="delegate">Delegate</option>
+                                <option value="speaker" selected>Speaker</option>
+                                <option value="vip">VIP</option>
+                                <option value="exhibitor">Exhibitor</option>
+                                <option value="sponsor">Sponsor</option>
+                                <option value="organizer">Organizer</option>
+                                <option value="media">Media</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-photo-shape">Photo Frame Shape</label>
+                            <select id="badge-photo-shape" class="form-control">
+                                <option value="circle">Circular Frame</option>
+                                <option value="square">Rounded Square Frame</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Custom Branding Theme -->
+                <div class="option-group">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        4. Badge Theme Template
+                    </h3>
+                    
+                    <div class="theme-selector-grid">
+                        <!-- Theme: BIT KNUST Official -->
+                        <div class="theme-option active" data-theme="official">
+                            <span class="theme-title">BIT KNUST Official</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Emerald, gold stripe &amp; kente detail</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#0f172a;"></div>
+                                <div class="color-dot" style="background:#fbbf24;"></div>
+                                <div class="color-dot" style="background:#10b981;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Theme: Enly Modern -->
+                        <div class="theme-option" data-theme="enly">
+                            <span class="theme-title">Enly Modern</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Minimalist dark & brand amber</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#000000;"></div>
+                                <div class="color-dot" style="background:#d97706;"></div>
+                                <div class="color-dot" style="background:#ffffff;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Theme: Kente Heritage -->
+                        <div class="theme-option" data-theme="kente">
+                            <span class="theme-title">Heritage Kente</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Full African heritage artwork banner</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#78350f;"></div>
+                                <div class="color-dot" style="background:#f59e0b;"></div>
+                                <div class="color-dot" style="background:#ef4444;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Theme: Midnight Tech -->
+                        <div class="theme-option" data-theme="midnight">
+                            <span class="theme-title">Midnight Tech</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Sleek futuristic dark theme design</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#020617;"></div>
+                                <div class="color-dot" style="background:#3b82f6;"></div>
+                                <div class="color-dot" style="background:#0f172a;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Theme: Apple Silicon Glassmorphism -->
+                        <div class="theme-option" data-theme="glassmorphism">
+                            <span class="theme-title">Cupertino Glass</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Frosted glass on colorful mesh backdrop</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#a855f7;"></div>
+                                <div class="color-dot" style="background:#3b82f6;"></div>
+                                <div class="color-dot" style="background:rgba(255,255,255,0.7);"></div>
+                            </div>
+                        </div>
+
+                        <!-- Theme: SaaS Aurora Glow -->
+                        <div class="theme-option" data-theme="neon-glow">
+                            <span class="theme-title">SaaS Aurora Glow</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Deep space dark with neon auroras</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#030712;"></div>
+                                <div class="color-dot" style="background:#a855f7;"></div>
+                                <div class="color-dot" style="background:#06b6d4;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Theme: Cupertino Light -->
+                        <div class="theme-option" data-theme="neo-light">
+                            <span class="theme-title">Cupertino Light</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">Matte white with bold black border</span>
+                            <div class="theme-preview-colors">
+                                <div class="color-dot" style="background:#ffffff;"></div>
+                                <div class="color-dot" style="background:#000000;"></div>
+                                <div class="color-dot" style="background:#f3f4f6;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="badge-watermark-checkbox" checked style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--accent);">
+                        <label for="badge-watermark-checkbox" style="font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">Show background watermark doodle art</label>
+                    </div>
+                </div>
+
+                <!-- Section: Advanced Card Customizer -->
+                <div class="option-group">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        5. Advanced Customizer
+                    </h3>
+                    
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-radius-input">Corner Radius</label>
+                            <input type="range" id="badge-radius-input" min="0" max="36" value="16" style="width: 100%; cursor: pointer;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-border-select">Border Style</label>
+                            <select id="badge-border-select" class="form-control">
+                                <option value="default">Default Subtly Thin</option>
+                                <option value="glow">SaaS Neon Glow</option>
+                                <option value="gold">Gold Metallic</option>
+                                <option value="heavy">Cupertino Bold Black</option>
+                                <option value="none">No Border</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="option-grid" style="margin-top: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-lanyard-picker">Lanyard Color</label>
+                            <input type="color" id="badge-lanyard-picker" value="#0f172a" style="width: 100%; height: 38px; padding: 2px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-sm);">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-qr-style-select">QR Dot Shape</label>
+                            <select id="badge-qr-style-select" class="form-control">
+                                <option value="rounded" selected>Rounded Dots</option>
+                                <option value="extra-rounded">Extra Rounded</option>
+                                <option value="classy">Classy Curves</option>
+                                <option value="dots">Circular Dots</option>
+                                <option value="square">Standard Squares</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="option-grid" style="margin-top: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-bg-upload">Card Background Image</label>
+                            <div class="custom-file-upload">
+                                <input type="file" id="badge-bg-upload" accept="image/*">
+                                <div class="upload-area" id="badge-bg-upload-area">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                    <span class="upload-text">Upload Card BG</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-header-upload">Top Banner Image</label>
+                            <div class="custom-file-upload">
+                                <input type="file" id="badge-header-upload" accept="image/*">
+                                <div class="upload-area" id="badge-header-upload-area">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    <span class="upload-text">Upload Banner</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="badge-ribbon-checkbox" style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--accent);">
+                            <label for="badge-ribbon-checkbox" style="font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">Enable Diagonal Role Ribbon</label>
+                        </div>
+                        
+                        <div id="ribbon-controls-wrapper" style="display: none; margin-top: 12px; gap: 10px; grid-template-columns: 1.5fr 1fr;">
+                            <div>
+                                <label class="form-label" for="badge-ribbon-text">Ribbon Text</label>
+                                <input type="text" id="badge-ribbon-text" class="form-control" value="SPEAKER" placeholder="e.g. VIP">
+                            </div>
+                            <div>
+                                <label class="form-label" for="badge-ribbon-color">Ribbon Color</label>
+                                <input type="color" id="badge-ribbon-color" value="#ef4444" style="width: 100%; height: 38px; padding: 2px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-sm);">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Typography & Alignment -->
+                <div class="option-group">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"></path></svg>
+                        6. Typography & Alignment
+                    </h3>
+                    
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-name-color">Name Text Color</label>
+                            <input type="color" id="badge-name-color" value="#0f172a" style="width: 100%; height: 38px; padding: 2px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-sm);">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-desc-color">Subtext/Job Color</label>
+                            <input type="color" id="badge-desc-color" value="#475569" style="width: 100%; height: 38px; padding: 2px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); border-radius: var(--radius-sm);">
+                        </div>
+                    </div>
+
+                    <div class="option-grid" style="margin-top: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-name-size">Name Font Size (px)</label>
+                            <input type="range" id="badge-name-size" min="14" max="32" value="21" style="width: 100%; cursor: pointer;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-role-size">Role Font Size (px)</label>
+                            <input type="range" id="badge-role-size" min="10" max="22" value="13" style="width: 100%; cursor: pointer;">
+                        </div>
+                    </div>
+
+                    <div class="option-grid" style="margin-top: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="badge-align-select">Text Alignment</label>
+                            <select id="badge-align-select" class="form-control">
+                                <option value="center" selected>Center Aligned</option>
+                                <option value="left">Left Aligned</option>
+                                <option value="right">Right Aligned</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <!-- Spacer -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: QR Link -->
+                <div class="option-group" style="border-bottom: none; padding-bottom: 0;">
+                    <h3 style="color: var(--accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        7. Embedded QR Code Pass
+                    </h3>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="badge-qr-input">QR Code Content (e.g. Email / URL / vCard)</label>
+                        <input type="text" id="badge-qr-input" class="form-control" value="https://enly.me/kelvin" placeholder="e.g. pass URL or email address">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Live Badge Card Preview -->
+            <div class="badge-preview-container">
+                <div class="badge-perspective">
+                    <!-- Lanyard Hanger Preview -->
+                    <div class="badge-lanyard-hanger" id="lanyard-hanger-el">
+                        <div class="lanyard-strap" id="lanyard-strap-el"></div>
+                        <div class="lanyard-clip"></div>
+                    </div>
+                    <!-- The actual card -->
+                    <div class="badge-card" id="event-badge-card">
+                        <!-- Glassmorphism simulated layer -->
+                        <div class="glass-overlay" id="card-glass-el"></div>
+
+                        <!-- Diagonal Ribbon Banner -->
+                        <div class="badge-ribbon" id="card-ribbon-el">SPEAKER</div>
+
+                        <!-- Top header banner -->
+                        <div class="badge-header" id="card-header-el">
+                            <img src="african_heritage_banner.png" alt="Header Banner" class="badge-header-bg" id="card-header-bg-el">
+                            <div class="badge-header-logo-icon" id="card-logo-icon">🌍</div>
+                            <div class="badge-header-title" id="card-title-el">BIT KNUST</div>
+                            <div class="badge-header-subtitle" id="card-subtitle-el">Dept. of Business Information Technology</div>
+                        </div>
+
+                        <!-- Accent border line -->
+                        <div class="badge-accent-stripe" id="card-stripe-el"></div>
+
+                        <!-- Doodle Watermark -->
+                        <img src="urban_doodle_art.png" alt="watermark" class="badge-watermark" id="card-watermark-el">
+
+                        <!-- Attendee Photo container -->
+                        <div class="badge-photo-container">
+                            <!-- Circular frame inside card -->
+                            <img src="" alt="Attendee Photo" class="badge-photo" id="card-photo-el" style="display: none;">
+                            <div class="badge-photo-placeholder" id="card-photo-placeholder-el">KB</div>
+                        </div>
+
+                        <!-- Attendee details -->
+                        <div class="badge-info-section">
+                            <div class="badge-name" id="card-name-el">Kelvin Boateng</div>
+                            <div class="badge-role-title" id="card-job-el">Software Developer &amp; AI Engineer</div>
+                            <div class="badge-company" id="card-company-el">BIT, KNUST</div>
+                        </div>
+
+                        <!-- QR Code -->
+                        <div class="badge-qr-container">
+                            <div class="badge-qr-frame">
+                                <div id="badge-qrcode-el"></div>
+                            </div>
+                        </div>
+
+                        <!-- Role status footer bar -->
+                        <div class="badge-footer-bar" id="card-role-bar-el">Speaker</div>
+                    </div>
+                </div>
+
+                <!-- Export Controls -->
+                <div class="card" style="width: 100%; max-width: 350px; padding: 25px;">
+                    <h3 style="font-size: 15px; margin-bottom: 12px;">Export & Print</h3>
+                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 15px;">
+                        Export the badge as a high-quality PNG image for websites/emails, or print it directly onto A6 badge paper or cardstock.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
+                        <button type="button" class="btn btn-primary" id="download-badge-btn" style="padding: 12px 0;">
+                            <span>Download PNG</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="print-badge-btn" style="padding: 12px 0;">
+                            <span>Print Badge</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Enly URL Shortener. Built by Mr. Rager & 3Strong Inc.</p>
+        </div>
+    </footer>
+
+    <!-- Interactive script for event badge generation -->
+    <script type="module">
+        import { showToast } from "./auth.js";
+
+        // Global state
+        let qrCodeStyling = null;
+        let selectedTheme = 'official';
+        let uploadedPhotoSrc = '';
+        let selectedAvatar = 'kb';
+        let uploadedBgSrc = '';
+        let uploadedHeaderSrc = '';
+
+        // Color mapping for categories
+        const categoryStyles = {
+            delegate: {
+                label: 'Delegate',
+                color: '#10b981', // Emerald green
+                textAccent: '#047857'
+            },
+            speaker: {
+                label: 'Speaker',
+                color: '#8b5cf6', // Violet
+                textAccent: '#6d28d9'
+            },
+            vip: {
+                label: 'VIP / Guest',
+                color: '#d97706', // Gold/Amber
+                textAccent: '#b45309'
+            },
+            exhibitor: {
+                label: 'Exhibitor',
+                color: '#0ea5e9', // Sky blue
+                textAccent: '#0369a1'
+            },
+            sponsor: {
+                label: 'Sponsor',
+                color: '#64748b', // Slate
+                textAccent: '#475569'
+            },
+            organizer: {
+                label: 'Organizer',
+                color: '#ef4444', // Ruby Red
+                textAccent: '#b91c1c'
+            },
+            media: {
+                label: 'Media',
+                color: '#f97316', // Orange
+                textAccent: '#c2410c'
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Setup mobile navigation
+            setupMobileNav();
+
+            // Set up event listeners
+            initControls();
+
+            // Add 3D Tilt Effect to the Badge Card
+            initTiltEffect();
+
+            // Initial badge update
+            updateBadge();
+        });
+
+        function setupMobileNav() {
+            const menuBtn = document.getElementById("mobile-menu-btn");
+            const navLinks = document.querySelector(".nav-links");
+            
+            if (menuBtn && navLinks) {
+                const mediaQuery = window.matchMedia("(max-width: 640px)");
+                const handleMedia = (mq) => {
+                    if (mq.matches) {
+                        menuBtn.style.display = "block";
+                        navLinks.style.display = "none";
+                        navLinks.className = "nav-links mobile-collapsed";
+                    } else {
+                        menuBtn.style.display = "none";
+                        navLinks.style.display = "flex";
+                        navLinks.className = "nav-links";
+                    }
+                };
+                
+                mediaQuery.addListener(handleMedia);
+                handleMedia(mediaQuery);
+
+                menuBtn.addEventListener("click", () => {
+                    if (navLinks.style.display === "none" || navLinks.classList.contains("mobile-collapsed")) {
+                        navLinks.style.display = "flex";
+                        navLinks.className = "nav-links mobile-expanded";
+                        navLinks.style.position = "absolute";
+                        navLinks.style.top = "70px";
+                        navLinks.style.left = "0";
+                        navLinks.style.right = "0";
+                        navLinks.style.background = "var(--bg-secondary)";
+                        navLinks.style.flexDirection = "column";
+                        navLinks.style.padding = "20px";
+                        navLinks.style.borderBottom = "1px solid rgba(0,0,0,0.1)";
+                        navLinks.style.boxShadow = "0 10px 20px rgba(0,0,0,0.05)";
+                        menuBtn.innerText = "✕";
+                    } else {
+                        navLinks.style.display = "none";
+                        navLinks.className = "nav-links mobile-collapsed";
+                        menuBtn.innerText = "☰";
+                    }
+                });
+            }
+        }
+
+        function initControls() {
+            // Text inputs
+            document.getElementById('badge-name-input').addEventListener('input', updateBadge);
+            document.getElementById('badge-title-input').addEventListener('input', updateBadge);
+            document.getElementById('badge-company-input').addEventListener('input', updateBadge);
+            document.getElementById('badge-qr-input').addEventListener('input', updateBadge);
+            
+            // Dropdowns
+            document.getElementById('badge-category-select').addEventListener('change', updateBadge);
+            document.getElementById('badge-photo-shape').addEventListener('change', updateBadge);
+
+            // Watermark checkbox
+            document.getElementById('badge-watermark-checkbox').addEventListener('change', (e) => {
+                const watermark = document.getElementById('card-watermark-el');
+                watermark.style.display = e.target.checked ? 'block' : 'none';
+            });
+
+            // Theme options
+            const themeOptions = document.querySelectorAll('.theme-option');
+            themeOptions.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    themeOptions.forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    selectedTheme = opt.dataset.theme;
+                    updateBadge();
+                });
+            });
+
+            // Avatar presets
+            const avatarBtns = document.querySelectorAll('.avatar-preset-btn');
+            avatarBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    avatarBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedAvatar = btn.dataset.avatar;
+                    
+                    // Reset file upload
+                    document.getElementById('badge-photo-upload').value = '';
+                    uploadedPhotoSrc = '';
+                    
+                    updateBadge();
+                });
+            });
+
+            // Custom photo upload
+            const fileUpload = document.getElementById('badge-photo-upload');
+            const fileUploadText = document.querySelector('#badge-photo-upload-area .upload-text');
+            fileUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    fileUploadText.innerText = "Upload Photo";
+                    return;
+                }
+                fileUploadText.innerText = file.name.length > 15 ? file.name.substring(0, 12) + "..." : file.name;
+
+                // Deactivate avatar presets
+                avatarBtns.forEach(b => b.classList.remove('active'));
+                selectedAvatar = '';
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedPhotoSrc = event.target.result;
+                    updateBadge();
+                    showToast("Attendee photo uploaded successfully!", "success");
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Advanced customizer controls
+            document.getElementById('badge-radius-input').addEventListener('input', updateBadge);
+            document.getElementById('badge-border-select').addEventListener('change', updateBadge);
+            document.getElementById('badge-lanyard-picker').addEventListener('input', updateBadge);
+            document.getElementById('badge-qr-style-select').addEventListener('change', updateBadge);
+            
+            // Custom card background image upload
+            const bgUpload = document.getElementById('badge-bg-upload');
+            const bgUploadText = document.querySelector('#badge-bg-upload-area .upload-text');
+            bgUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    uploadedBgSrc = '';
+                    bgUploadText.innerText = "Upload Card BG";
+                    updateBadge();
+                    return;
+                }
+                bgUploadText.innerText = file.name.length > 15 ? file.name.substring(0, 12) + "..." : file.name;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedBgSrc = event.target.result;
+                    updateBadge();
+                    showToast("Card background image updated!", "success");
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Custom top banner image upload
+            const headerUpload = document.getElementById('badge-header-upload');
+            const headerUploadText = document.querySelector('#badge-header-upload-area .upload-text');
+            headerUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    uploadedHeaderSrc = '';
+                    headerUploadText.innerText = "Upload Banner";
+                    updateBadge();
+                    return;
+                }
+                headerUploadText.innerText = file.name.length > 15 ? file.name.substring(0, 12) + "..." : file.name;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedHeaderSrc = event.target.result;
+                    updateBadge();
+                    showToast("Top banner image updated!", "success");
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Ribbon toggles
+            const ribbonChk = document.getElementById('badge-ribbon-checkbox');
+            const ribbonCtrlWrapper = document.getElementById('ribbon-controls-wrapper');
+            ribbonChk.addEventListener('change', (e) => {
+                ribbonCtrlWrapper.style.display = e.target.checked ? 'grid' : 'none';
+                updateBadge();
+            });
+            document.getElementById('badge-ribbon-text').addEventListener('input', updateBadge);
+            document.getElementById('badge-ribbon-color').addEventListener('input', updateBadge);
+
+            // Typography & Alignment listeners
+            document.getElementById('badge-name-color').addEventListener('input', updateBadge);
+            document.getElementById('badge-desc-color').addEventListener('input', updateBadge);
+            document.getElementById('badge-name-size').addEventListener('input', updateBadge);
+            document.getElementById('badge-role-size').addEventListener('input', updateBadge);
+            document.getElementById('badge-align-select').addEventListener('change', updateBadge);
+
+            // Export buttons
+            document.getElementById('download-badge-btn').addEventListener('click', downloadBadge);
+            document.getElementById('print-badge-btn').addEventListener('click', () => {
+                window.print();
+            });
+        }
+
+        function initTiltEffect() {
+            const card = document.getElementById('event-badge-card');
+            const wrapper = card.parentElement;
+
+            wrapper.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                
+                // Convert coordinates to rotation degrees
+                const rotateX = -(y / (rect.height / 2)) * 12; // max 12 deg
+                const rotateY = (x / (rect.width / 2)) * 12; // max 12 deg
+
+                card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+            });
+
+            wrapper.addEventListener('mouseleave', () => {
+                card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+            });
+        }
+
+        function updateBadge() {
+            // 1. Fetch values
+            const name = document.getElementById('badge-name-input').value.trim() || 'Attendee Name';
+            const title = document.getElementById('badge-title-input').value.trim() || 'Job Title';
+            const company = document.getElementById('badge-company-input').value.trim() || 'Company Name';
+            const categoryKey = document.getElementById('badge-category-select').value;
+            const photoShape = document.getElementById('badge-photo-shape').value;
+            const qrText = document.getElementById('badge-qr-input').value.trim() || 'https://3iafrica.com';
+
+            const cardRadius = document.getElementById('badge-radius-input').value;
+            const borderStyle = document.getElementById('badge-border-select').value;
+            const lanyardColor = document.getElementById('badge-lanyard-picker').value;
+            const qrDotStyle = document.getElementById('badge-qr-style-select').value;
+            const enableRibbon = document.getElementById('badge-ribbon-checkbox').checked;
+            const ribbonText = document.getElementById('badge-ribbon-text').value.trim() || 'SPEAKER';
+            const ribbonColor = document.getElementById('badge-ribbon-color').value;
+
+            // Fetch custom typography & alignment inputs
+            const nameColor = document.getElementById('badge-name-color').value;
+            const descColor = document.getElementById('badge-desc-color').value;
+            const nameSize = document.getElementById('badge-name-size').value;
+            const roleSize = document.getElementById('badge-role-size').value;
+            const textAlignment = document.getElementById('badge-align-select').value;
+
+            const catConfig = categoryStyles[categoryKey];
+
+            // Update DOM text fields
+            document.getElementById('card-name-el').innerText = name;
+            document.getElementById('card-job-el').innerText = title;
+            document.getElementById('card-company-el').innerText = company;
+
+            // 2. Apply Customizer properties
+            const card = document.getElementById('event-badge-card');
+            const header = document.getElementById('card-header-el');
+            const headerBg = document.getElementById('card-header-bg-el');
+            const logoIcon = document.getElementById('card-logo-icon');
+            const headerTitle = document.getElementById('card-title-el');
+            const headerSubtitle = document.getElementById('card-subtitle-el');
+            const companyEl = document.getElementById('card-company-el');
+            const stripe = document.getElementById('card-stripe-el');
+            const glassOverlay = document.getElementById('card-glass-el');
+            const ribbonEl = document.getElementById('card-ribbon-el');
+
+            // Apply corner radius
+            card.style.borderRadius = cardRadius + 'px';
+
+            // Apply lanyard color
+            document.getElementById('lanyard-strap-el').style.backgroundColor = lanyardColor;
+
+            // Apply border customizer classes
+            card.classList.remove('border-glow', 'border-gold', 'border-heavy', 'border-none', 'dark-theme-active');
+            if (borderStyle === 'glow') {
+                card.classList.add('border-glow');
+            } else if (borderStyle === 'gold') {
+                card.classList.add('border-gold');
+                if (selectedTheme === 'midnight' || selectedTheme === 'glassmorphism' || selectedTheme === 'neon-glow') {
+                    card.classList.add('dark-theme-active');
+                }
+            } else if (borderStyle === 'heavy') {
+                card.classList.add('border-heavy');
+            } else if (borderStyle === 'none') {
+                card.classList.add('border-none');
+            }
+
+            // Apply ribbon configurations
+            if (enableRibbon) {
+                ribbonEl.style.display = 'block';
+                ribbonEl.innerText = ribbonText;
+                ribbonEl.style.backgroundColor = ribbonColor;
+            } else {
+                ribbonEl.style.display = 'none';
+            }
+
+            // Default theme options resets
+            card.style.background = '#ffffff';
+            card.style.borderColor = 'rgba(0,0,0,0.06)';
+            document.getElementById('card-name-el').style.color = '#0f172a';
+            document.getElementById('card-job-el').style.color = '#475569';
+            logoIcon.innerText = '🌍';
+            headerBg.style.display = 'block';
+            glassOverlay.style.display = 'none';
+
+            if (selectedTheme === 'official') {
+                header.style.background = '#0f172a';
+                header.style.color = 'white';
+                headerTitle.innerText = 'BIT KNUST';
+                headerSubtitle.innerText = 'Dept. of Business Information Technology';
+                headerBg.src = 'african_heritage_banner.png';
+                headerBg.style.opacity = '0.35';
+                stripe.style.background = 'linear-gradient(90deg, #10b981 0%, #fbbf24 50%, #ef4444 100%)';
+                companyEl.style.color = catConfig.textAccent;
+            } 
+            else if (selectedTheme === 'enly') {
+                header.style.background = '#000000';
+                header.style.color = 'white';
+                headerTitle.innerText = 'Enly Summit';
+                headerSubtitle.innerText = 'Premium Short Links & Insights';
+                logoIcon.innerText = '🔗';
+                headerBg.style.display = 'none';
+                stripe.style.background = 'var(--accent)';
+                companyEl.style.color = 'var(--accent)';
+            } 
+            else if (selectedTheme === 'kente') {
+                header.style.background = '#78350f';
+                header.style.color = 'white';
+                headerTitle.innerText = 'African Heritage';
+                headerSubtitle.innerText = 'Tradition & Tech Symposium';
+                headerBg.src = 'urban_doodle_art.png';
+                headerBg.style.opacity = '0.45';
+                stripe.style.background = 'linear-gradient(90deg, #f59e0b 0%, #ea580c 50%, #ef4444 100%)';
+                companyEl.style.color = '#b45309';
+            } 
+            else if (selectedTheme === 'midnight') {
+                card.style.background = '#0b0f19';
+                card.style.borderColor = '#1e293b';
+                header.style.background = '#020617';
+                header.style.color = 'white';
+                headerTitle.innerText = 'Tech Frontiers';
+                headerSubtitle.innerText = 'Artificial Intelligence & Nodes';
+                logoIcon.innerText = '⚡';
+                headerBg.style.display = 'none';
+                stripe.style.background = 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)';
+                companyEl.style.color = '#3b82f6';
+                
+                document.getElementById('card-name-el').style.color = '#f8fafc';
+                document.getElementById('card-job-el').style.color = '#94a3b8';
+            }
+            else if (selectedTheme === 'glassmorphism') {
+                // Cupertino Glass: frosted white glass simulated with a colorful neon mesh background gradient on the card
+                card.style.background = 'linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #3b82f6 100%)';
+                glassOverlay.style.display = 'block';
+                
+                header.style.background = 'transparent';
+                header.style.color = '#1e1b4b';
+                headerTitle.innerText = 'Cupertino Glass';
+                headerSubtitle.innerText = 'SaaS Innovation Forum';
+                logoIcon.innerText = '';
+                headerBg.style.display = 'none';
+                stripe.style.background = 'rgba(255, 255, 255, 0.4)';
+                companyEl.style.color = '#4f46e5';
+                
+                document.getElementById('card-name-el').style.color = '#1e1b4b';
+                document.getElementById('card-job-el').style.color = '#312e81';
+            }
+            else if (selectedTheme === 'neon-glow') {
+                // SaaS Aurora Glow: futuristic space theme
+                card.style.background = 'linear-gradient(135deg, #090d16 0%, #030712 100%)';
+                card.style.borderColor = '#1e293b';
+                
+                header.style.background = 'rgba(15, 23, 42, 0.4)';
+                header.style.color = 'white';
+                headerTitle.innerText = 'SaaS Aurora';
+                headerSubtitle.innerText = 'Next-Gen Cloud Summit';
+                logoIcon.innerText = '✨';
+                headerBg.style.display = 'none';
+                stripe.style.background = 'linear-gradient(90deg, #a855f7 0%, #06b6d4 100%)';
+                companyEl.style.color = '#06b6d4';
+                
+                document.getElementById('card-name-el').style.color = '#ffffff';
+                document.getElementById('card-job-el').style.color = '#94a3b8';
+            }
+            else if (selectedTheme === 'neo-light') {
+                // Cupertino Light: minimal design layout
+                card.style.background = '#ffffff';
+                card.style.borderColor = '#000000';
+                
+                header.style.background = '#fafafa';
+                header.style.color = '#000000';
+                headerTitle.innerText = 'Cupertino Sync';
+                headerSubtitle.innerText = 'Designed by Enly in California';
+                logoIcon.innerText = '❑';
+                headerBg.style.display = 'none';
+                stripe.style.background = '#000000';
+                companyEl.style.color = '#000000';
+                
+                document.getElementById('card-name-el').style.color = '#000000';
+                document.getElementById('card-job-el').style.color = '#475569';
+            }
+
+            // 2b. Apply custom image uploads (background and header)
+            if (uploadedBgSrc) {
+                card.style.backgroundImage = `url(${uploadedBgSrc})`;
+                card.style.backgroundSize = 'cover';
+                card.style.backgroundPosition = 'center';
+                card.style.backgroundRepeat = 'no-repeat';
+            } else {
+                card.style.backgroundImage = '';
+            }
+
+            if (uploadedHeaderSrc) {
+                headerBg.src = uploadedHeaderSrc;
+                headerBg.style.display = 'block';
+                headerBg.style.opacity = '1';
+            }
+
+            // 2c. Apply Typography & Alignment overrides
+            const nameEl = document.getElementById('card-name-el');
+            const jobEl = document.getElementById('card-job-el');
+
+            nameEl.style.color = nameColor;
+            nameEl.style.fontSize = nameSize + 'px';
+
+            jobEl.style.color = descColor;
+            jobEl.style.fontSize = roleSize + 'px';
+
+            companyEl.style.color = descColor;
+
+            const infoSection = document.querySelector('.badge-info-section');
+            infoSection.style.textAlign = textAlignment;
+            if (textAlignment === 'left') {
+                infoSection.style.alignItems = 'flex-start';
+            } else if (textAlignment === 'right') {
+                infoSection.style.alignItems = 'flex-end';
+            } else {
+                infoSection.style.alignItems = 'center';
+            }
+
+            // 3. Photo Styling & Rendering
+            const photoEl = document.getElementById('card-photo-el');
+            const placeholderEl = document.getElementById('card-photo-placeholder-el');
+
+            if (photoShape === 'circle') {
+                photoEl.classList.remove('square');
+                placeholderEl.classList.remove('square');
+            } else {
+                photoEl.classList.add('square');
+                placeholderEl.classList.add('square');
+            }
+
+            photoEl.style.borderColor = catConfig.color;
+            placeholderEl.style.borderColor = catConfig.color;
+
+            if (uploadedPhotoSrc) {
+                photoEl.src = uploadedPhotoSrc;
+                photoEl.style.display = 'block';
+                placeholderEl.style.display = 'none';
+            } else {
+                photoEl.style.display = 'none';
+                placeholderEl.style.display = 'flex';
+                
+                if (selectedAvatar === 'kb') {
+                    const initials = name.split(' ')
+                        .filter(n => n && !n.includes('.'))
+                        .slice(0, 2)
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase() || 'A';
+                    placeholderEl.innerHTML = `<span style="font-weight:800; font-size: 26px; color: white; letter-spacing:-0.03em;">${initials}</span>`;
+                    placeholderEl.style.background = 'linear-gradient(135deg, #1e293b, #0f172a)';
+                } else if (selectedAvatar === 'm') {
+                    placeholderEl.innerHTML = `<svg viewBox="0 0 64 64" fill="currentColor" style="width: 64px; height: 64px; color: white; opacity: 0.95;"><circle cx="32" cy="22" r="10" /><path d="M32 36c-9.94 0-18 8.06-18 18h36c0-9.94-8.06-18-18-18zm-3 8h6l-3 6-3-6z" /></svg>`;
+                    placeholderEl.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+                } else if (selectedAvatar === 'w') {
+                    placeholderEl.innerHTML = `<svg viewBox="0 0 64 64" fill="currentColor" style="width: 64px; height: 64px; color: white; opacity: 0.95;"><path d="M32 10c-6.63 0-12 5.37-12 12a11.95 11.95 0 0 0 3.32 8.24c-5.74 2.15-9.32 6.55-9.32 11.76h36c0-5.21-3.58-9.61-9.32-11.76A11.95 11.95 0 0 0 44 22c0-6.63-5.37-12-12-12zm-4 26h8v2l-4 4-4-4v-2z" /></svg>`;
+                    placeholderEl.style.background = 'linear-gradient(135deg, #ec4899, #be185d)';
+                } else if (selectedAvatar === 'tech') {
+                    placeholderEl.innerHTML = `<svg viewBox="0 0 64 64" fill="currentColor" style="width: 50px; height: 50px; color: white; opacity: 0.95;"><path d="M48 14H16c-2.2 0-4 1.8-4 4v22c0 2.2 1.8 4 4 4h32c2.2 0 4-1.8 4-4V18c0-2.2-1.8-4-4-4zm-2 26H18V18h28v22zm-22-8l-5-5 5-5-1.4-1.4-6.4 6.4 6.4 6.4L24 32zm8 0l1.4-1.4 5-5-5-5-1.4 1.4 5 5-5 5zm16 14H16c-1.1 0-2 .9-2 2s.9 2 2 2h32c1.1 0 2-.9 2-2s-.9-2-2-2z"/></svg>`;
+                    placeholderEl.style.background = 'linear-gradient(135deg, #10b981, #047857)';
+                }
+            }
+
+            // 4. Role Status Footer Bar Styling
+            const footerBar = document.getElementById('card-role-bar-el');
+            footerBar.innerText = catConfig.label;
+            footerBar.style.backgroundColor = catConfig.color;
+
+            // 5. Generate QR Code Pass inside Badge
+            const qrContainer = document.getElementById('badge-qrcode-el');
+            qrContainer.innerHTML = '';
+
+            try {
+                if (typeof QRCodeStyling !== "undefined") {
+                    qrCodeStyling = new QRCodeStyling({
+                        width: 90,
+                        height: 90,
+                        type: 'svg',
+                        data: qrText,
+                        margin: 2,
+                        qrOptions: {
+                            typeNumber: 0,
+                            mode: 'Byte',
+                            errorCorrectionLevel: 'M'
+                        },
+                        backgroundOptions: {
+                            color: '#ffffff'
+                        },
+                        dotsOptions: {
+                            color: selectedTheme === 'midnight' || selectedTheme === 'neon-glow' ? '#0b0f19' : '#0f172a',
+                            type: qrDotStyle
+                        },
+                        cornersSquareOptions: {
+                            color: selectedTheme === 'midnight' || selectedTheme === 'neon-glow' ? '#0b0f19' : '#0f172a',
+                            type: qrDotStyle === 'square' ? 'square' : 'extra-rounded'
+                        },
+                        cornersDotOptions: {
+                            color: selectedTheme === 'midnight' || selectedTheme === 'neon-glow' ? '#0b0f19' : '#0f172a',
+                            type: qrDotStyle === 'dots' || qrDotStyle === 'classy' ? 'dot' : 'square'
+                        }
+                    });
+                    qrCodeStyling.append(qrContainer);
+                } else {
+                    qrContainer.innerHTML = '<span style="font-size:8px;">QR Lib</span>';
+                }
+            } catch (err) {
+                console.error("Badge QR generation error:", err);
+            }
+        }
+
+        async function downloadBadge() {
+            const card = document.getElementById('event-badge-card');
+            
+            showToast("Generating image download...", "info");
+
+            const origTransform = card.style.transform;
+            card.style.transform = 'none';
+
+            setTimeout(() => {
+                html2canvas(card, {
+                    scale: 3,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null
+                }).then(canvas => {
+                    card.style.transform = origTransform;
+
+                    const attendeeName = document.getElementById('badge-name-input').value.trim() || 'Attendee';
+                    const filename = `badge-${attendeeName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`;
+                    
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    
+                    showToast("Event badge PNG downloaded!", "success");
+                }).catch(err => {
+                    console.error("html2canvas error:", err);
+                    card.style.transform = origTransform;
+                    showToast("Export failed. Try printing to PDF.", "error");
+                });
+            }, 50);
+        }
+    </script>
+</body>
+</html>

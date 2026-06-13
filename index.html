@@ -26,14 +26,11 @@
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script>
-        // Unregister existing Service Workers to revert PWA caching
+        // Unregister existing Service Workers (legacy PWA cleanup — silent, no reload)
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.getRegistrations().then((registrations) => {
                 for (let reg of registrations) {
-                    reg.unregister().then(() => {
-                        console.log("Service Worker unregistered.");
-                        window.location.reload();
-                    });
+                    reg.unregister();
                 }
             });
         }
@@ -49,7 +46,10 @@
                 <span>Enly</span>
             </a>
             <nav class="nav-links">
-                <a href="login.html" class="btn btn-secondary">Admin Dashboard</a>
+                <a href="index.html" class="nav-link active hide-mobile">Shortener</a>
+                <a href="qr-generator.html" class="nav-link">Custom QR</a>
+                <a href="badge-generator.html" class="nav-link">Event Badges</a>
+                <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
             </nav>
         </div>
     </header>

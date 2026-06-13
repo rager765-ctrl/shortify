@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enly | Custom QR Code Generator</title>
+    <meta name="description" content="Generate highly customized, branded, and modern promotional QR codes with logos, custom colors, and gradients.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <meta name="theme-color" content="#d97706">
+    <!-- Load qr-code-styling library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <style>
+        .generator-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+            align-items: start;
+        }
+        
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .option-group {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .option-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        .option-group h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .option-grid.full {
+            grid-template-columns: 1fr;
+        }
+
+        .preview-sticky {
+            position: sticky;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .preview-box {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: var(--radius-xl);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid rgba(0,0,0,0.03);
+            position: relative;
+        }
+
+        .preview-canvas-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .preset-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid transparent;
+            padding: 8px 4px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            transition: var(--transition-fast);
+            color: var(--text-secondary);
+        }
+
+        .preset-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+            color: var(--text-primary);
+        }
+
+        .preset-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .color-inputs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker-wrapper {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            width: 50px;
+            height: 50px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .gradient-fields {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: var(--radius-sm);
+        }
+
+        .gradient-fields.show {
+            display: flex;
+        }
+
+        .logo-presets {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .logo-preset-btn {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fast);
+        }
+
+        .logo-preset-btn:hover {
+            background: rgba(0,0,0,0.02);
+            border-color: var(--accent);
+        }
+
+        .logo-preset-btn img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        .logo-preset-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        @media (max-width: 900px) {
+            .generator-layout {
+                grid-template-columns: 1fr;
+            }
+            .preview-sticky {
+                position: static;
+                order: -1;
+            }
+            .preview-box {
+                max-width: 100%;
+            }
+        }
+
+        /* Polished file upload button styling */
+        .custom-file-upload {
+            position: relative;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .custom-file-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        .upload-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border: 2px dashed rgba(99, 102, 241, 0.25);
+            border-radius: var(--radius-md);
+            background: rgba(99, 102, 241, 0.02);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+        }
+
+        .custom-file-upload:hover .upload-area {
+            border-color: var(--accent);
+            background: rgba(168, 85, 247, 0.05);
+            color: var(--accent);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
+        }
+
+        .upload-area svg {
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-file-upload:hover .upload-area svg {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🔗</div>
+                <span>Enly</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link hide-mobile">Shortener</a>
+                <a href="qr-generator.html" class="nav-link active">Custom QR</a>
+                <a href="badge-generator.html" class="nav-link">Event Badges</a>
+                <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-btn" id="mobile-menu-btn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-primary);">
+                ☰
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content wrapper -->
+    <main class="container" style="flex: 1;">
+        
+        <!-- Hero Section -->
+        <section class="hero animate-fade" style="padding-top: 40px; padding-bottom: 20px;">
+            <h1>Create modern branded <br><span style="background: linear-gradient(135deg, var(--accent), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Promotional QR Codes</span></h1>
+            <p style="font-size: 15px; margin-bottom: 0; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Customize colors, apply gradients, shape corner frames, and insert your logo. Download in print-ready vector SVG or high-resolution PNG.
+            </p>
+        </section>
+
+        <!-- Generator Layout -->
+        <div class="generator-layout">
+            
+            <!-- Left Panel: Controls -->
+            <div class="card control-section animate-fade">
+                
+                <!-- Section: Content -->
+                <div class="option-group">
+                    <h3>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        1. QR Code Target URL
+                    </h3>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="qr-data-input">Destination Link / Text</label>
+                        <input type="text" id="qr-data-input" class="form-control" value="https://enly.li" placeholder="Paste your link or text here..." style="font-size: 15px;">
+                    </div>
+                </div>
+
+                <!-- Section: Presets -->
+                <div class="option-group">
+                    <h3>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        Quick Templates
+                    </h3>
+                    <div class="preset-container">
+                        <button type="button" class="preset-btn active" data-preset="default">Minimalist</button>
+                        <button type="button" class="preset-btn" data-preset="sunset">Sunset Glow</button>
+                        <button type="button" class="preset-btn" data-preset="forest">Forest Tech</button>
+                        <button type="button" class="preset-btn" data-preset="ocean">Ocean Blue</button>
+                        <button type="button" class="preset-btn" data-preset="royal">Royal Gold</button>
+                    </div>
+                </div>
+
+                <!-- Section: Pattern & Shape Styles -->
+                <div class="option-group">
+                    <h3>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"></path><path d="M12 8V16"></path><path d="M8 12H16"></path></svg>
+                        2. Dot & Corner Design
+                    </h3>
+                    
+                    <div class="option-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="dot-style-select">Dot Pattern</label>
+                            <select id="dot-style-select" class="form-control">
+                                <option value="square">Standard Square</option>
+                                <option value="rounded" selected>Rounded Squares</option>
+                                <option value="extra-rounded">Extra Rounded</option>
+                                <option value="dots">Circular Dots</option>
+                                <option value="classy">Classy Leaf</option>
+                                <option value="classy-rounded">Classy Rounded</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="corner-square-select">Corner Frame Shape</label>
+                            <select id="corner-square-select" class="form-control">
+                                <option value="square">Square Frame</option>
+                                <option value="dot">Circular Frame</option>
+                                <option value="extra-rounded" selected>Rounded Frame</option>
+                                <option value="out-rounded">Out-Rounded Frame</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="corner-dot-select">Corner Inner Dot</label>
+                            <select id="corner-dot-select" class="form-control">
+                                <option value="square">Square Dot</option>
+                                <option value="dot" selected>Circular Dot</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="qr-margin-input">Outer Margin (px)</label>
+                            <input type="number" id="qr-margin-input" class="form-control" value="10" min="0" max="40">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Colors -->
+                <div class="option-group">
+                    <h3>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"></path><path d="M12 16V12H16"></path></svg>
+                        3. Color Palette
+                    </h3>
+                    
+                    <div class="option-grid">
+                        <div class="form-group">
+                            <label class="form-label">Background Color</label>
+                            <div class="color-inputs">
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="bg-color-picker" value="#ffffff">
+                                </div>
+                                <input type="text" id="bg-color-hex" class="form-control" value="#ffffff" placeholder="#ffffff" style="font-family: monospace;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Dots Color Mode</label>
+                            <select id="dots-color-mode" class="form-control">
+                                <option value="solid">Solid Color</option>
+                                <option value="gradient">Gradient Fill</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Solid Dots Color Picker -->
+                    <div id="dots-solid-container" class="form-group">
+                        <label class="form-label">Dots Color</label>
+                        <div class="color-inputs">
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="dots-color-picker" value="#0f172a">
+                            </div>
+                            <input type="text" id="dots-color-hex" class="form-control" value="#0f172a" placeholder="#0f172a" style="font-family: monospace;">
+                        </div>
+                    </div>
+
+                    <!-- Gradient Dots Fields -->
+                    <div id="dots-gradient-container" class="gradient-fields">
+                        <div class="option-grid">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="grad-type-select">Gradient Type</label>
+                                <select id="grad-type-select" class="form-control">
+                                    <option value="linear">Linear Gradient</option>
+                                    <option value="radial">Radial Gradient</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="grad-rotation-input">Rotation (Deg)</label>
+                                <input type="number" id="grad-rotation-input" class="form-control" value="45" min="0" max="360">
+                            </div>
+                        </div>
+                        <div class="option-grid">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Start Color</label>
+                                <div class="color-inputs">
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="grad-start-picker" value="#ea580c">
+                                    </div>
+                                    <input type="text" id="grad-start-hex" class="form-control" value="#ea580c" style="font-family: monospace;">
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">End Color</label>
+                                <div class="color-inputs">
+                                    <div class="color-picker-wrapper">
+                                        <input type="color" id="grad-end-picker" value="#d97706">
+                                    </div>
+                                    <input type="text" id="grad-end-hex" class="form-control" value="#d97706" style="font-family: monospace;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Corner Colors (Optional) -->
+                    <div style="margin-top: 15px;">
+                        <div class="advanced-toggle" id="corner-colors-toggle" style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); font-weight: 600;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>Customize Corner Frame Colors Separately</span>
+                        </div>
+                        <div id="corner-colors-fields" style="display: none; gap: 15px; margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.02); border-radius: var(--radius-sm);">
+                            <div class="option-grid">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Corner Frame Color</label>
+                                    <div class="color-inputs">
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" id="corner-square-picker" value="#0f172a">
+                                        </div>
+                                        <input type="text" id="corner-square-hex" class="form-control" value="#0f172a" style="font-family: monospace; font-size:12px;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Corner Dot Color</label>
+                                    <div class="color-inputs">
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" id="corner-dot-picker" value="#0f172a">
+                                        </div>
+                                        <input type="text" id="corner-dot-hex" class="form-control" value="#0f172a" style="font-family: monospace; font-size:12px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+                                Note: If unchecked or unset, corners will inherit the general Dots Color pattern.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Logo Branding -->
+                <div class="option-group">
+                    <h3>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        4. Brand Logo overlay
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Choose Preset Branding or Upload Logo</label>
+                        <div class="logo-presets">
+                            <button type="button" class="logo-preset-btn active" data-logo="none" title="No Logo">None</button>
+                            <button type="button" class="logo-preset-btn" data-logo="enly" title="Enly Logo">
+                                <span style="font-size:16px;">🔗</span>
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="whatsapp" title="WhatsApp">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512' fill='%2325D366'><path d='M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z'/></svg>" alt="WhatsApp">
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="linkedin" title="LinkedIn">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512' fill='%230A66C2'><path d='M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.9h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z'/></svg>" alt="LinkedIn">
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="instagram" title="Instagram">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512' fill='%23E1306C'><path d='M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 3.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 32.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s-2.7 102.7-9 132.1z'/></svg>" alt="Instagram">
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="x" title="Twitter / X">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='black'><path d='M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z'/></svg>" alt="X">
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="facebook" title="Facebook">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%231877F2'><path d='M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14 0 55.52 4.84 55.52 4.84v61h-31.28c-30.8 0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z'/></svg>" alt="Facebook">
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="youtube" title="YouTube">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' fill='%23FF0000'><path d='M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z'/></svg>" alt="YouTube">
+                            </button>
+                            <button type="button" class="logo-preset-btn" data-logo="tiktok" title="TikTok">
+                                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512' fill='black'><path d='M448 209.91a210.06 210.06 0 0 1-122.77-39.25v178.66a172.94 172.94 0 1 1-172.94-172.94 171.95 171.95 0 0 1 45.47 6.13v80.2a92.86 92.86 0 1 0 47.27 86.87v-269.6h80.73a110.82 110.82 0 0 0 110.11 106.18v83.75z'/></svg>" alt="TikTok">
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="option-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="logo-upload">Upload Custom Image</label>
+                            <div class="custom-file-upload">
+                                <input type="file" id="logo-upload" accept="image/*">
+                                <div class="upload-area" id="logo-upload-area">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    <span class="upload-text">Upload Custom Logo</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="logo-size-input">Logo Scale Ratio</label>
+                            <input type="range" id="logo-size-input" class="form-control" style="padding: 0; height: 38px; border:none; background:transparent;" min="0.05" max="0.35" step="0.01" value="0.2">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:-6px;">
+                                <span>Small (5%)</span>
+                                <span>Large (35%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="option-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="logo-margin-input">Logo Inner Margin (px)</label>
+                            <input type="number" id="logo-margin-input" class="form-control" value="6" min="0" max="20">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px; padding-top: 25px;">
+                            <input type="checkbox" id="logo-clear-dots-checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent);">
+                            <label for="logo-clear-dots-checkbox" style="font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">Clear background dots</label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Sticky Live Preview & Action Downloads -->
+            <div class="preview-sticky">
+                <div class="preview-box">
+                    <div class="preview-canvas-container" id="qr-preview-canvas">
+                        <!-- Canvas appends here dynamically -->
+                    </div>
+                </div>
+
+                <div class="card" style="width: 100%; max-width: 380px; padding: 25px;">
+                    <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-primary);">Export Options</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="qr-download-size">Download Resolution (px)</label>
+                        <select id="qr-download-size" class="form-control">
+                            <option value="512">Standard (512 x 512)</option>
+                            <option value="1024" selected>High Res (1024 x 1024)</option>
+                            <option value="2048">Print Quality (2048 x 2048)</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button type="button" class="btn btn-primary" id="download-png-btn" style="padding: 12px 0;">
+                            <span>Download PNG</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="download-svg-btn" style="padding: 12px 0;">
+                            <span>Download SVG</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Enly URL Shortener. Built by Mr. Rager & 3Strong Inc.</p>
+        </div>
+    </footer>
+
+    <!-- Interactive script for real-time QR generation -->
+    <script type="module">
+        import { showToast } from "./auth.js";
+
+        // Global variables for generator
+        let qrCodeStyling = null;
+        let selectedPreset = 'default';
+        let logoImageSrc = ''; // Base64 data url for logo
+        let useSeparateCornerColors = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Check if there's a custom URL passed in query params
+            const params = new URLSearchParams(window.location.search);
+            const passedUrl = params.get('url');
+            if (passedUrl) {
+                document.getElementById('qr-data-input').value = passedUrl;
+            }
+
+            // Initialize mobile menu
+            setupMobileNav();
+
+            // Set up event listeners
+            initControls();
+            
+            // Generate initial QR code
+            updateQRCode();
+        });
+
+        function setupMobileNav() {
+            const menuBtn = document.getElementById("mobile-menu-btn");
+            const navLinks = document.querySelector(".nav-links");
+            
+            if (menuBtn && navLinks) {
+                // Determine if we need to show the menu button based on css
+                const mediaQuery = window.matchMedia("(max-width: 640px)");
+                const handleMedia = (mq) => {
+                    if (mq.matches) {
+                        menuBtn.style.display = "block";
+                        navLinks.style.display = "none";
+                        // Reset classes
+                        navLinks.className = "nav-links mobile-collapsed";
+                    } else {
+                        menuBtn.style.display = "none";
+                        navLinks.style.display = "flex";
+                        navLinks.className = "nav-links";
+                    }
+                };
+                
+                mediaQuery.addListener(handleMedia);
+                handleMedia(mediaQuery);
+
+                menuBtn.addEventListener("click", () => {
+                    if (navLinks.style.display === "none" || navLinks.classList.contains("mobile-collapsed")) {
+                        navLinks.style.display = "flex";
+                        navLinks.className = "nav-links mobile-expanded";
+                        navLinks.style.position = "absolute";
+                        navLinks.style.top = "70px";
+                        navLinks.style.left = "0";
+                        navLinks.style.right = "0";
+                        navLinks.style.background = "var(--bg-secondary)";
+                        navLinks.style.flexDirection = "column";
+                        navLinks.style.padding = "20px";
+                        navLinks.style.borderBottom = "1px solid rgba(0,0,0,0.1)";
+                        navLinks.style.boxShadow = "0 10px 20px rgba(0,0,0,0.05)";
+                        menuBtn.innerText = "✕";
+                    } else {
+                        navLinks.style.display = "none";
+                        navLinks.className = "nav-links mobile-collapsed";
+                        menuBtn.innerText = "☰";
+                    }
+                });
+            }
+        }
+
+        function initControls() {
+            // Inputs list
+            const inputs = [
+                'qr-data-input', 'dot-style-select', 'corner-square-select', 'corner-dot-select', 
+                'qr-margin-input', 'bg-color-picker', 'bg-color-hex', 'dots-color-picker', 
+                'dots-color-hex', 'dots-color-mode', 'grad-type-select', 'grad-rotation-input',
+                'grad-start-picker', 'grad-start-hex', 'grad-end-picker', 'grad-end-hex',
+                'logo-size-input', 'logo-margin-input', 'logo-clear-dots-checkbox',
+                'corner-square-picker', 'corner-square-hex', 'corner-dot-picker', 'corner-dot-hex'
+            ];
+
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                
+                // Color pickers sync with HEX text inputs
+                if (id.endsWith('-picker')) {
+                    const hexId = id.replace('-picker', '-hex');
+                    const hexEl = document.getElementById(hexId);
+                    
+                    el.addEventListener('input', () => {
+                        hexEl.value = el.value;
+                        updateQRCode();
+                    });
+                } else if (id.endsWith('-hex')) {
+                    const pickerId = id.replace('-hex', '-picker');
+                    const pickerEl = document.getElementById(pickerId);
+                    
+                    el.addEventListener('input', () => {
+                        let val = el.value.trim();
+                        if (val.startsWith('#') && (val.length === 4 || val.length === 7)) {
+                            pickerEl.value = val;
+                            updateQRCode();
+                        }
+                    });
+                } else {
+                    el.addEventListener('input', updateQRCode);
+                    el.addEventListener('change', updateQRCode);
+                }
+            });
+
+            // Toggle dots color mode (Solid / Gradient)
+            const colorMode = document.getElementById('dots-color-mode');
+            colorMode.addEventListener('change', () => {
+                const isGrad = colorMode.value === 'gradient';
+                document.getElementById('dots-solid-container').style.display = isGrad ? 'none' : 'block';
+                const gradContainer = document.getElementById('dots-gradient-container');
+                if (isGrad) {
+                    gradContainer.classList.add('show');
+                } else {
+                    gradContainer.classList.remove('show');
+                }
+                updateQRCode();
+            });
+
+            // Advanced corner colors toggle
+            const cornerColorsToggle = document.getElementById('corner-colors-toggle');
+            const cornerColorsFields = document.getElementById('corner-colors-fields');
+            
+            cornerColorsToggle.addEventListener('click', () => {
+                useSeparateCornerColors = !useSeparateCornerColors;
+                if (useSeparateCornerColors) {
+                    cornerColorsFields.style.display = 'flex';
+                    cornerColorsFields.style.flexDirection = 'column';
+                    cornerColorsToggle.querySelector('svg').style.transform = 'rotate(90deg)';
+                } else {
+                    cornerColorsFields.style.display = 'none';
+                    cornerColorsToggle.querySelector('svg').style.transform = 'rotate(0deg)';
+                }
+                updateQRCode();
+            });
+
+            // Quick templates
+            const presetBtns = document.querySelectorAll('.preset-btn');
+            presetBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    presetBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+
+            // Logo Branding presets
+            const logoBtns = document.querySelectorAll('.logo-preset-btn');
+            const fileUploadText = document.querySelector('#logo-upload-area .upload-text');
+            logoBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    logoBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const logoType = btn.dataset.logo;
+                    
+                    // Reset file upload
+                    document.getElementById('logo-upload').value = '';
+                    fileUploadText.innerText = "Upload Custom Logo";
+                    
+                    if (logoType === 'none') {
+                        logoImageSrc = '';
+                        updateQRCode();
+                    } else if (logoType === 'enly') {
+                        // Create a SVG data URL representing Enly's logo icon: 🔗
+                        logoImageSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="20" fill="black"/><text y="0.85em" x="0.1em" font-size="70" fill="white">🔗</text></svg>';
+                        updateQRCode();
+                    } else {
+                        // Find the image inside the button and copy source
+                        const img = btn.querySelector('img');
+                        if (img) {
+                            logoImageSrc = img.src;
+                            updateQRCode();
+                        }
+                    }
+                });
+            });
+
+            // Custom logo upload
+            const fileUpload = document.getElementById('logo-upload');
+            fileUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    fileUploadText.innerText = "Upload Custom Logo";
+                    return;
+                }
+                fileUploadText.innerText = file.name.length > 15 ? file.name.substring(0, 12) + "..." : file.name;
+
+                // Deactivate preset buttons
+                logoBtns.forEach(b => b.classList.remove('active'));
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    logoImageSrc = event.target.result;
+                    updateQRCode();
+                    showToast("Custom logo uploaded successfully!", "success");
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Download buttons
+            document.getElementById('download-png-btn').addEventListener('click', () => downloadQR('png'));
+            document.getElementById('download-svg-btn').addEventListener('click', () => downloadQR('svg'));
+        }
+
+        function applyPreset(preset) {
+            selectedPreset = preset;
+            const bgColor = document.getElementById('bg-color-picker');
+            const bgHex = document.getElementById('bg-color-hex');
+            const dotsMode = document.getElementById('dots-color-mode');
+            const dotsSolidPicker = document.getElementById('dots-color-picker');
+            const dotsSolidHex = document.getElementById('dots-color-hex');
+            const dotStyle = document.getElementById('dot-style-select');
+            const cornerSquareStyle = document.getElementById('corner-square-select');
+            const cornerDotStyle = document.getElementById('corner-dot-select');
+
+            // Force hide gradient container by default
+            dotsMode.value = 'solid';
+            document.getElementById('dots-solid-container').style.display = 'block';
+            document.getElementById('dots-gradient-container').classList.remove('show');
+
+            if (preset === 'default') {
+                bgColor.value = '#ffffff';
+                dotsSolidPicker.value = '#0f172a';
+                dotStyle.value = 'rounded';
+                cornerSquareStyle.value = 'extra-rounded';
+                cornerDotStyle.value = 'dot';
+            } 
+            else if (preset === 'sunset') {
+                bgColor.value = '#ffffff';
+                dotsMode.value = 'gradient';
+                document.getElementById('dots-solid-container').style.display = 'none';
+                document.getElementById('dots-gradient-container').classList.add('show');
+                
+                document.getElementById('grad-type-select').value = 'linear';
+                document.getElementById('grad-rotation-input').value = '45';
+                document.getElementById('grad-start-picker').value = '#f97316'; // orange
+                document.getElementById('grad-end-picker').value = '#db2777'; // pink
+                
+                document.getElementById('grad-start-hex').value = '#f97316';
+                document.getElementById('grad-end-hex').value = '#db2777';
+                
+                dotStyle.value = 'extra-rounded';
+                cornerSquareStyle.value = 'extra-rounded';
+                cornerDotStyle.value = 'dot';
+            } 
+            else if (preset === 'forest') {
+                bgColor.value = '#f0fdf4'; // pale green
+                dotsSolidPicker.value = '#065f46'; // dark green
+                dotStyle.value = 'classy';
+                cornerSquareStyle.value = 'square';
+                cornerDotStyle.value = 'square';
+            } 
+            else if (preset === 'ocean') {
+                bgColor.value = '#ffffff';
+                dotsMode.value = 'gradient';
+                document.getElementById('dots-solid-container').style.display = 'none';
+                document.getElementById('dots-gradient-container').classList.add('show');
+                
+                document.getElementById('grad-type-select').value = 'linear';
+                document.getElementById('grad-rotation-input').value = '135';
+                document.getElementById('grad-start-picker').value = '#0284c7'; // blue
+                document.getElementById('grad-end-picker').value = '#0d9488'; // teal
+                
+                document.getElementById('grad-start-hex').value = '#0284c7';
+                document.getElementById('grad-end-hex').value = '#0d9488';
+                
+                dotStyle.value = 'dots';
+                cornerSquareStyle.value = 'dot';
+                cornerDotStyle.value = 'dot';
+            } 
+            else if (preset === 'royal') {
+                bgColor.value = '#0f172a'; // dark navy/black
+                dotsSolidPicker.value = '#fbbf24'; // amber gold
+                dotStyle.value = 'classy-rounded';
+                cornerSquareStyle.value = 'out-rounded';
+                cornerDotStyle.value = 'dot';
+            }
+
+            // Sync Hex text fields
+            bgHex.value = bgColor.value;
+            dotsSolidHex.value = dotsSolidPicker.value;
+
+            // Trigger QR redraw
+            updateQRCode();
+            showToast(`Preset "${preset}" applied!`, "info");
+        }
+
+        function updateQRCode() {
+            const dataText = document.getElementById('qr-data-input').value.trim() || 'https://enly.li';
+            const dotStyle = document.getElementById('dot-style-select').value;
+            const cornerSquareStyle = document.getElementById('corner-square-select').value;
+            const cornerDotStyle = document.getElementById('corner-dot-select').value;
+            const margin = parseInt(document.getElementById('qr-margin-input').value) || 0;
+            const bgColor = document.getElementById('bg-color-picker').value;
+            
+            const colorMode = document.getElementById('dots-color-mode').value;
+            const dotsSolidColor = document.getElementById('dots-color-picker').value;
+            
+            const gradType = document.getElementById('grad-type-select').value;
+            const gradRotation = parseInt(document.getElementById('grad-rotation-input').value) || 0;
+            const gradStartColor = document.getElementById('grad-start-picker').value;
+            const gradEndColor = document.getElementById('grad-end-picker').value;
+
+            const logoScale = parseFloat(document.getElementById('logo-size-input').value) || 0.2;
+            const logoMargin = parseInt(document.getElementById('logo-margin-input').value) || 0;
+            const clearDots = document.getElementById('logo-clear-dots-checkbox').checked;
+
+            // Prepare dotsOptions
+            let dotsOptions = {
+                type: dotStyle
+            };
+
+            if (colorMode === 'gradient') {
+                dotsOptions.gradient = {
+                    type: gradType,
+                    rotation: (gradRotation * Math.PI) / 180,
+                    colorStops: [
+                        { offset: 0, color: gradStartColor },
+                        { offset: 1, color: gradEndColor }
+                    ]
+                };
+            } else {
+                dotsOptions.color = dotsSolidColor;
+            }
+
+            // Prepare corner options
+            let cornersSquareOptions = {
+                type: cornerSquareStyle
+            };
+            let cornersDotOptions = {
+                type: cornerDotStyle
+            };
+
+            if (useSeparateCornerColors) {
+                cornersSquareOptions.color = document.getElementById('corner-square-picker').value;
+                cornersDotOptions.color = document.getElementById('corner-dot-picker').value;
+            } else {
+                // Match general dot colors
+                if (colorMode === 'solid') {
+                    cornersSquareOptions.color = dotsSolidColor;
+                    cornersDotOptions.color = dotsSolidColor;
+                } else {
+                    cornersSquareOptions.color = gradStartColor;
+                    cornersDotOptions.color = gradEndColor;
+                }
+            }
+
+            // Create configurations
+            const options = {
+                width: 300,
+                height: 300,
+                type: 'svg',
+                data: dataText,
+                margin: margin,
+                qrOptions: {
+                    typeNumber: 0,
+                    mode: 'Byte',
+                    errorCorrectionLevel: 'H' // Higher error correction makes it safer to put logo in center
+                },
+                backgroundOptions: {
+                    color: bgColor
+                },
+                dotsOptions: dotsOptions,
+                cornersSquareOptions: cornersSquareOptions,
+                cornersDotOptions: cornersDotOptions
+            };
+
+            // Include logo if set
+            if (logoImageSrc) {
+                options.image = logoImageSrc;
+                options.imageOptions = {
+                    crossOrigin: 'anonymous',
+                    hideBackgroundDots: clearDots,
+                    imageSize: logoScale,
+                    margin: logoMargin
+                };
+            }
+
+            // Clear preview element
+            const container = document.getElementById('qr-preview-canvas');
+            container.innerHTML = '';
+
+            // Generate styling instance
+            if (typeof QRCodeStyling !== "undefined") {
+                qrCodeStyling = new QRCodeStyling(options);
+                qrCodeStyling.append(container);
+            } else {
+                container.innerHTML = '<span style="color:var(--danger)">QR Styling Library not loaded. Check network connection.</span>';
+            }
+        }
+
+        async function downloadQR(format) {
+            if (!qrCodeStyling) {
+                showToast("No QR code to download.", "error");
+                return;
+            }
+
+            const downloadSizeVal = parseInt(document.getElementById('qr-download-size').value) || 1024;
+            
+            // Generate filename based on data
+            let filename = 'enly-custom-qr';
+            try {
+                const dataVal = document.getElementById('qr-data-input').value.trim();
+                if (dataVal) {
+                    const domain = new URL(dataVal).hostname.replace('www.', '');
+                    filename = `qr-${domain}`;
+                }
+            } catch (e) {
+                const rawVal = document.getElementById('qr-data-input').value.trim();
+                filename = `qr-${rawVal.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '-')}`;
+            }
+
+            showToast("Generating download package...", "info");
+
+            try {
+                // Fetch the latest values to build a clean offline-ready configuration
+                const dataText = document.getElementById('qr-data-input').value.trim() || 'https://enly.li';
+                const dotStyle = document.getElementById('dot-style-select').value;
+                const cornerSquareStyle = document.getElementById('corner-square-select').value;
+                const cornerDotStyle = document.getElementById('corner-dot-select').value;
+                const margin = parseInt(document.getElementById('qr-margin-input').value) || 0;
+                const bgColor = document.getElementById('bg-color-picker').value;
+                
+                const colorMode = document.getElementById('dots-color-mode').value;
+                const dotsSolidColor = document.getElementById('dots-color-picker').value;
+                
+                const gradType = document.getElementById('grad-type-select').value;
+                const gradRotation = parseInt(document.getElementById('grad-rotation-input').value) || 0;
+                const gradStartColor = document.getElementById('grad-start-picker').value;
+                const gradEndColor = document.getElementById('grad-end-picker').value;
+
+                const logoScale = parseFloat(document.getElementById('logo-size-input').value) || 0.2;
+                const logoMargin = parseInt(document.getElementById('logo-margin-input').value) || 0;
+                const clearDots = document.getElementById('logo-clear-dots-checkbox').checked;
+
+                // Prepare dotsOptions
+                let dotsOptions = {
+                    type: dotStyle
+                };
+
+                if (colorMode === 'gradient') {
+                    dotsOptions.gradient = {
+                        type: gradType,
+                        rotation: (gradRotation * Math.PI) / 180,
+                        colorStops: [
+                            { offset: 0, color: gradStartColor },
+                            { offset: 1, color: gradEndColor }
+                        ]
+                    };
+                } else {
+                    dotsOptions.color = dotsSolidColor;
+                }
+
+                // Prepare corner options
+                let cornersSquareOptions = {
+                    type: cornerSquareStyle
+                };
+                let cornersDotOptions = {
+                    type: cornerDotStyle
+                };
+
+                if (useSeparateCornerColors) {
+                    cornersSquareOptions.color = document.getElementById('corner-square-picker').value;
+                    cornersDotOptions.color = document.getElementById('corner-dot-picker').value;
+                } else {
+                    if (colorMode === 'solid') {
+                        cornersSquareOptions.color = dotsSolidColor;
+                        cornersDotOptions.color = dotsSolidColor;
+                    } else {
+                        cornersSquareOptions.color = gradStartColor;
+                        cornersDotOptions.color = gradEndColor;
+                    }
+                }
+
+                // Build a scale factor to keep margins and logos visually consistent with the 300px preview
+                const scaleFactor = downloadSizeVal / 300;
+
+                const downloadOptions = {
+                    width: downloadSizeVal,
+                    height: downloadSizeVal,
+                    // Critical fix: use 'canvas' engine for PNG downloads to render gradients & backgrounds perfectly.
+                    // Use 'svg' engine for SVG format to output crisp vector paths.
+                    type: format === 'svg' ? 'svg' : 'canvas',
+                    data: dataText,
+                    margin: Math.round(margin * scaleFactor),
+                    qrOptions: {
+                        typeNumber: 0,
+                        mode: 'Byte',
+                        errorCorrectionLevel: 'H'
+                    },
+                    backgroundOptions: {
+                        color: bgColor
+                    },
+                    dotsOptions: dotsOptions,
+                    cornersSquareOptions: cornersSquareOptions,
+                    cornersDotOptions: cornersDotOptions
+                };
+
+                if (logoImageSrc) {
+                    downloadOptions.image = logoImageSrc;
+                    downloadOptions.imageOptions = {
+                        crossOrigin: 'anonymous',
+                        hideBackgroundDots: clearDots,
+                        imageSize: logoScale,
+                        margin: Math.round(logoMargin * scaleFactor)
+                    };
+                }
+
+                // Instantiate temporary, standalone styling class to prevent UI jumping or layout shifts
+                const dlQrStyling = new QRCodeStyling(downloadOptions);
+
+                // Run library download method on the independent instance
+                await dlQrStyling.download({
+                    name: filename,
+                    extension: format
+                });
+
+                showToast("Download started successfully!", "success");
+            } catch (err) {
+                console.error("Download failed:", err);
+                showToast("Error generating download.", "error");
+            }
+        }
+    </script>
+</body>
+</html>
