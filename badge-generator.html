@@ -572,10 +572,7 @@
                 <a href="badge-generator.html" class="nav-link active">Event Badges</a>
                 <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
             </nav>
-            <!-- Mobile Menu Toggle -->
-            <button class="mobile-menu-btn" id="mobile-menu-btn" style="display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-primary);">
-                ☰
-            </button>
+
         </div>
     </header>
 
@@ -1055,7 +1052,7 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             // Setup mobile navigation
-            setupMobileNav();
+
 
             // Set up event listeners
             initControls();
@@ -1067,49 +1064,7 @@
             updateBadge();
         });
 
-        function setupMobileNav() {
-            const menuBtn = document.getElementById("mobile-menu-btn");
-            const navLinks = document.querySelector(".nav-links");
-            
-            if (menuBtn && navLinks) {
-                const mediaQuery = window.matchMedia("(max-width: 640px)");
-                const handleMedia = (mq) => {
-                    if (mq.matches) {
-                        menuBtn.style.display = "block";
-                        navLinks.style.display = "none";
-                        navLinks.className = "nav-links mobile-collapsed";
-                    } else {
-                        menuBtn.style.display = "none";
-                        navLinks.style.display = "flex";
-                        navLinks.className = "nav-links";
-                    }
-                };
-                
-                mediaQuery.addListener(handleMedia);
-                handleMedia(mediaQuery);
 
-                menuBtn.addEventListener("click", () => {
-                    if (navLinks.style.display === "none" || navLinks.classList.contains("mobile-collapsed")) {
-                        navLinks.style.display = "flex";
-                        navLinks.className = "nav-links mobile-expanded";
-                        navLinks.style.position = "absolute";
-                        navLinks.style.top = "70px";
-                        navLinks.style.left = "0";
-                        navLinks.style.right = "0";
-                        navLinks.style.background = "var(--bg-secondary)";
-                        navLinks.style.flexDirection = "column";
-                        navLinks.style.padding = "20px";
-                        navLinks.style.borderBottom = "1px solid rgba(0,0,0,0.1)";
-                        navLinks.style.boxShadow = "0 10px 20px rgba(0,0,0,0.05)";
-                        menuBtn.innerText = "✕";
-                    } else {
-                        navLinks.style.display = "none";
-                        navLinks.className = "nav-links mobile-collapsed";
-                        menuBtn.innerText = "☰";
-                    }
-                });
-            }
-        }
 
         function initControls() {
             // Text inputs

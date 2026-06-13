@@ -604,6 +604,31 @@ header .container {
     .qr-btn-prefix, .qr-btn-suffix {
         display: none;
     }
+    .qr-container {
+        width: 100%;
+        box-sizing: border-box;
+        align-items: center;
+        padding: 20px 12px;
+        border-radius: var(--radius-md);
+        text-align: center;
+    }
+    #qrcode {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
+    }
+    #qrcode canvas,
+    #qrcode img {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
+    }
+    #download-qr-action {
+        width: 100%;
+        box-sizing: border-box;
+    }
     .original-url-preview {
         max-width: 100%;
         margin-top: 4px;
