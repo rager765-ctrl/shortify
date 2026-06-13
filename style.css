@@ -537,6 +537,12 @@ header .container {
 }
 
 @media (max-width: 640px) {
+    .container {
+        padding: 0 16px;
+    }
+    .card {
+        padding: 20px !important;
+    }
     .nav-links {
         display: flex !important;
         gap: 6px !important;

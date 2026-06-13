@@ -197,6 +197,7 @@
         @media (max-width: 900px) {
             .generator-layout {
                 grid-template-columns: 1fr;
+                justify-items: center;
             }
             .preview-sticky {
                 position: static;
@@ -215,7 +216,12 @@
             .preview-canvas-container {
                 justify-content: center;
             }
-            .preview-sticky > .card {
+            .export-card {
+                max-width: 380px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .control-section {
                 max-width: 380px;
                 width: 100%;
                 box-sizing: border-box;
@@ -224,9 +230,12 @@
 
         @media (max-width: 640px) {
             .preview-box {
-                padding: 12px;
+                padding: 15px;
                 border-radius: var(--radius-md);
                 overflow: hidden;
+            }
+            .export-card {
+                padding: 16px !important;
             }
             .preview-canvas-container {
                 width: 100%;
@@ -253,6 +262,13 @@
             .download-btn-grid {
                 grid-template-columns: 1fr;
             }
+        }
+
+        .export-card {
+            width: 100%;
+            max-width: 380px;
+            padding: 25px;
+            box-sizing: border-box;
         }
 
         .download-btn-grid {
@@ -611,7 +627,7 @@
                     </div>
                 </div>
 
-                <div class="card" style="width: 100%; padding: 25px; box-sizing: border-box;">
+                <div class="card export-card">
                     <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--text-primary);">Export Options</h3>
                     
                     <div class="form-group">
