@@ -7,7 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
     doc, 
-    getDoc 
+    getDoc,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Toast helper
@@ -248,4 +249,108 @@ export function showConfigOverlay() {
             alert("Error parsing config. Make sure it's valid JSON format (keys and values in double quotes).");
         }
     });
+}
+
+// Real-time listener for Event Badge page visibility
+if (configured && db) {
+    try {
+        let badgePageEnabled = true;
+        let currentUserIsAdmin = false;
+
+        const evaluateBadgePageVisibility = () => {
+            // 1. Update all Event Badge links in the navbars/headers
+            const badgeLinks = document.querySelectorAll('a[href="badge-generator.html"]');
+            badgeLinks.forEach(link => {
+                if (badgePageEnabled || currentUserIsAdmin) {
+                    link.style.display = ""; // restore default display
+                } else {
+                    link.style.display = "none"; // hide link
+                }
+            });
+            
+            // 2. If we are on the badge-generator page itself, handle deactivated state
+            if (window.location.pathname.includes("badge-generator")) {
+                let overlay = document.getElementById("badge-deactivated-overlay");
+                const shouldHideContent = !badgePageEnabled && !currentUserIsAdmin;
+
+                if (shouldHideContent) {
+                    // Page is deactivated. Show overlay if not already shown
+                    if (!overlay) {
+                        overlay = document.createElement("div");
+                        overlay.id = "badge-deactivated-overlay";
+                        overlay.style.position = "fixed";
+                        overlay.style.top = "0";
+                        overlay.style.left = "0";
+                        overlay.style.right = "0";
+                        overlay.style.bottom = "0";
+                        overlay.style.background = "rgba(11, 15, 25, 0.9)";
+                        overlay.style.backdropFilter = "blur(16px)";
+                        overlay.style.webkitBackdropFilter = "blur(16px)";
+                        overlay.style.display = "flex";
+                        overlay.style.alignItems = "center";
+                        overlay.style.justifyContent = "center";
+                        overlay.style.zIndex = "99999";
+                        overlay.style.padding = "20px";
+                        overlay.style.animation = "fadeIn 0.3s ease-out forwards";
+                        
+                        overlay.innerHTML = `
+                            <div class="card" style="max-width: 480px; width: 100%; text-align: center; padding: 40px 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid var(--card-border); background: var(--bg-secondary);">
+                                <div style="width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; color: var(--danger);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </div>
+                                <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 12px; color: var(--text-primary); font-family: 'Outfit', sans-serif;">
+                                    Feature Deactivated
+                                </h2>
+                                <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 25px;">
+                                    The Event Badge Creator page has been temporarily deactivated by the system administrator. Please check back later.
+                                </p>
+                                <a href="index.html" class="btn btn-primary" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; text-decoration: none; font-weight: 600; border-radius: var(--radius-md);">
+                                    Return to Homepage
+                                </a>
+                            </div>
+                        `;
+                        document.body.appendChild(overlay);
+                        
+                        // Disable interactions in page background
+                        document.body.style.overflow = "hidden";
+                    }
+                } else {
+                    // Page is enabled or user is admin. Remove overlay if it exists
+                    if (overlay) {
+                        overlay.remove();
+                        document.body.style.overflow = "";
+                    }
+                }
+            }
+        };
+
+        // Listen for Firebase auth state changes to dynamically check admin access
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserIsAdmin = await checkIfAdmin(user.uid);
+            } else {
+                currentUserIsAdmin = false;
+            }
+            evaluateBadgePageVisibility();
+        });
+
+        // Listen for Firestore config updates
+        const featuresDocRef = doc(db, "config", "features");
+        onSnapshot(featuresDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                badgePageEnabled = docSnap.data().badgePageEnabled !== false;
+            } else {
+                badgePageEnabled = true;
+            }
+            evaluateBadgePageVisibility();
+        }, (error) => {
+            console.error("Error listening to features config:", error);
+        });
+
+    } catch (e) {
+        console.error("Failed to initialize feature config listener:", e);
+    }
 }

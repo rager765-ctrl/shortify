@@ -24,10 +24,10 @@ service cloud.firestore {
     }
 
     // Config settings
-    match /config/registration {
-      // Anyone can read if signup is enabled
+    match /config/{document} {
+      // Anyone can read config settings
       allow read: if true;
-      // Only admins can change registration settings
+      // Only admins can change settings
       allow write: if isAdmin();
     }
 

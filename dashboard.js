@@ -640,40 +640,80 @@ function fallbackCopyText(text) {
 async function setupSettingsToggle() {
     const toggle = document.getElementById("admin-signup-toggle");
     const label = document.getElementById("signup-toggle-label");
-    if (!toggle || !label) return;
+    const badgeToggle = document.getElementById("badge-page-toggle");
+    const badgeLabel = document.getElementById("badge-toggle-label");
 
-    // Load initial state
-    try {
-        const docRef = doc(db, "config", "registration");
-        const docSnap = await getDoc(docRef);
-        let signupEnabled = true;
-        if (docSnap.exists()) {
-            signupEnabled = docSnap.data().signupEnabled !== false;
-        }
-        toggle.checked = signupEnabled;
-        label.innerText = signupEnabled ? "Enabled" : "Disabled";
-        label.style.color = signupEnabled ? "var(--success)" : "var(--text-secondary)";
-    } catch (err) {
-        console.error("Error fetching signup setting:", err);
-    }
-
-    // Bind change listener
-    toggle.addEventListener("change", async () => {
-        const isChecked = toggle.checked;
-        label.innerText = isChecked ? "Enabled" : "Disabled";
-        label.style.color = isChecked ? "var(--success)" : "var(--text-secondary)";
-
+    if (toggle && label) {
+        // Load initial state
         try {
             const docRef = doc(db, "config", "registration");
-            await setDoc(docRef, { signupEnabled: isChecked });
-            showToast(isChecked ? "Admin registration enabled!" : "Admin registration disabled!");
+            const docSnap = await getDoc(docRef);
+            let signupEnabled = true;
+            if (docSnap.exists()) {
+                signupEnabled = docSnap.data().signupEnabled !== false;
+            }
+            toggle.checked = signupEnabled;
+            label.innerText = signupEnabled ? "Enabled" : "Disabled";
+            label.style.color = signupEnabled ? "var(--success)" : "var(--text-secondary)";
         } catch (err) {
-            console.error("Error updating signup config:", err);
-            showToast("Failed to update registration settings.", "error");
-            // revert UI state
-            toggle.checked = !isChecked;
-            label.innerText = !isChecked ? "Enabled" : "Disabled";
-            label.style.color = !isChecked ? "var(--success)" : "var(--text-secondary)";
+            console.error("Error fetching signup setting:", err);
         }
-    });
+
+        // Bind change listener
+        toggle.addEventListener("change", async () => {
+            const isChecked = toggle.checked;
+            label.innerText = isChecked ? "Enabled" : "Disabled";
+            label.style.color = isChecked ? "var(--success)" : "var(--text-secondary)";
+
+            try {
+                const docRef = doc(db, "config", "registration");
+                await setDoc(docRef, { signupEnabled: isChecked });
+                showToast(isChecked ? "Admin registration enabled!" : "Admin registration disabled!");
+            } catch (err) {
+                console.error("Error updating signup config:", err);
+                showToast("Failed to update registration settings.", "error");
+                // revert UI state
+                toggle.checked = !isChecked;
+                label.innerText = !isChecked ? "Enabled" : "Disabled";
+                label.style.color = !isChecked ? "var(--success)" : "var(--text-secondary)";
+            }
+        });
+    }
+
+    if (badgeToggle && badgeLabel) {
+        // Load initial state for badge page
+        try {
+            const docRef = doc(db, "config", "features");
+            const docSnap = await getDoc(docRef);
+            let badgePageEnabled = true;
+            if (docSnap.exists()) {
+                badgePageEnabled = docSnap.data().badgePageEnabled !== false;
+            }
+            badgeToggle.checked = badgePageEnabled;
+            badgeLabel.innerText = badgePageEnabled ? "Enabled" : "Disabled";
+            badgeLabel.style.color = badgePageEnabled ? "var(--success)" : "var(--text-secondary)";
+        } catch (err) {
+            console.error("Error fetching badge page setting:", err);
+        }
+
+        // Bind change listener for badge page
+        badgeToggle.addEventListener("change", async () => {
+            const isChecked = badgeToggle.checked;
+            badgeLabel.innerText = isChecked ? "Enabled" : "Disabled";
+            badgeLabel.style.color = isChecked ? "var(--success)" : "var(--text-secondary)";
+
+            try {
+                const docRef = doc(db, "config", "features");
+                await setDoc(docRef, { badgePageEnabled: isChecked });
+                showToast(isChecked ? "Event Badge page is now public!" : "Event Badge page is now hidden!");
+            } catch (err) {
+                console.error("Error updating badge page config:", err);
+                showToast("Failed to update Event Badge page settings.", "error");
+                // revert UI state
+                badgeToggle.checked = !isChecked;
+                badgeLabel.innerText = !isChecked ? "Enabled" : "Disabled";
+                badgeLabel.style.color = !isChecked ? "var(--success)" : "var(--text-secondary)";
+            }
+        });
+    }
 }
