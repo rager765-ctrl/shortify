@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1200">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Enly | Premium Event Badge Creator</title>
     <meta name="description" content="Design and print customized event badges, inspired by the official 3iAfrica Summit badge layouts, with custom photos, categories, and QR codes.">
     <link rel="stylesheet" href="style.css">
@@ -459,10 +459,41 @@
         @media (max-width: 900px) {
             .badge-layout {
                 grid-template-columns: 1fr;
+                justify-items: center;
+                gap: 25px;
+                margin: 20px 0;
             }
             .badge-preview-container {
                 position: static;
                 order: -1;
+                width: 100%;
+                align-items: center;
+            }
+            .control-section {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .theme-selector-grid {
+                grid-template-columns: 1fr;
+            }
+            .option-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .control-section {
+                padding: 20px !important;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .badge-perspective {
+                transform: scale(calc((100vw - 32px) / 340));
+                transform-origin: top center;
+                margin-bottom: calc(-510px * (1 - (100vw - 32px) / 340));
             }
         }
 

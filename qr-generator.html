@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1200">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Enly | Custom QR Code Generator</title>
     <meta name="description" content="Generate highly customized, branded, and modern promotional QR codes with logos, custom colors, and gradients.">
     <link rel="stylesheet" href="style.css">
@@ -198,18 +198,21 @@
             .generator-layout {
                 grid-template-columns: 1fr;
                 justify-items: center;
+                gap: 25px;
+                margin: 20px 0;
             }
             .preview-sticky {
                 position: static;
                 order: -1;
                 width: 100%;
                 align-items: center;
+                max-width: 600px;
             }
             .preview-box {
-                max-width: 380px;
+                max-width: 100%;
                 width: 100%;
                 box-sizing: border-box;
-                padding: 20px;
+                padding: 24px;
                 min-height: unset;
                 justify-content: center;
             }
@@ -217,12 +220,12 @@
                 justify-content: center;
             }
             .export-card {
-                max-width: 380px;
+                max-width: 100%;
                 width: 100%;
                 box-sizing: border-box;
             }
             .control-section {
-                max-width: 380px;
+                max-width: 600px;
                 width: 100%;
                 box-sizing: border-box;
             }
@@ -261,6 +264,13 @@
             /* Stack export buttons vertically */
             .download-btn-grid {
                 grid-template-columns: 1fr;
+            }
+            /* Adjust preset grids to be touch-friendly */
+            .logo-presets {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .preset-container {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
 
