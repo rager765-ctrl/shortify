@@ -262,9 +262,9 @@ if (configured && db) {
             const badgeLinks = document.querySelectorAll('a[href="badge-generator.html"]');
             badgeLinks.forEach(link => {
                 if (badgePageEnabled || currentUserIsAdmin) {
-                    link.style.display = ""; // restore default display
+                    link.classList.remove("badge-link-hidden");
                 } else {
-                    link.style.display = "none"; // hide link
+                    link.classList.add("badge-link-hidden");
                 }
             });
             

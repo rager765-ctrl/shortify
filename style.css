@@ -1174,3 +1174,8 @@ footer p {
         font-size: 16px !important;
     }
 }
+
+/* Event Badge visibility guard class - hidden during initial Firebase loading */
+.badge-link-hidden {
+    display: none !important;
+}
