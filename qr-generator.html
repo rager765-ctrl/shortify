@@ -362,8 +362,9 @@
                 <span>Enly</span>
             </a>
             <nav class="nav-links">
-                <a href="index.html" class="nav-link hide-mobile">Shortener</a>
+                <a href="index.html" class="nav-link">Shortener</a>
                 <a href="qr-generator.html" class="nav-link active">Custom QR</a>
+                <a href="converter.html" class="nav-link">Doc Converter</a>
                 <a href="badge-generator.html" class="nav-link badge-link-hidden">Event Badges</a>
                 <a href="about.html" class="nav-link">About &amp; Help</a>
                 <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
@@ -377,7 +378,7 @@
         
         <!-- Hero Section -->
         <section class="hero animate-fade" style="padding-top: 40px; padding-bottom: 20px;">
-            <h1>Create modern branded <br><span style="background: linear-gradient(135deg, var(--accent), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Promotional QR Codes</span></h1>
+            <h1>Create modern branded <br><span style="background: linear-gradient(135deg, var(--accent), #f59e0b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Promotional QR Codes</span></h1>
             <p style="font-size: 15px; margin-bottom: 0; max-width: 600px; margin-left: auto; margin-right: auto;">
                 Customize colors, apply gradients, shape corner frames, and insert your logo. Download in print-ready vector SVG or high-resolution PNG.
             </p>
@@ -1255,6 +1256,16 @@
                 });
 
                 showToast("Download started successfully!", "success");
+
+                // Record live analytics stat
+                try {
+                    const current = parseInt(localStorage.getItem('enly_stats_qr_generated') || '28', 10);
+                    const updated = current + 1;
+                    localStorage.setItem('enly_stats_qr_generated', updated.toString());
+                    window.dispatchEvent(new CustomEvent('enly_stats_updated', { detail: { qrGenerated: updated } }));
+                } catch (e) {
+                    console.error("Error updating QR stats:", e);
+                }
             } catch (err) {
                 console.error("Download failed:", err);
                 showToast("Error generating download.", "error");

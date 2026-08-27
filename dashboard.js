@@ -16,6 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { showToast, logoutAdmin } from "./auth.js";
 import { generateQRCode } from "./shorten.js";
+import { getLiveAnalyticsStats } from "./analytics.js";
 
 let urlsData = [];
 let selectedUrlCode = null;
@@ -33,6 +34,12 @@ export function initDashboard() {
     
     // Setup system registration settings toggle
     setupSettingsToggle();
+
+    // Setup mobile visibility settings toggles
+    setupMobileVisibilityToggles();
+
+    // Setup tab switching
+    setupTabSwitching();
     
     // Load Stats and URL list in real-time
     setupRealtimeListeners();
@@ -119,16 +126,24 @@ function calculateStats() {
         }
     });
     
+    const liveStats = getLiveAnalyticsStats();
+    
     const totalLinksEl = document.getElementById("stat-total-links");
     const totalClicksEl = document.getElementById("stat-total-clicks");
     const activeLinksEl = document.getElementById("stat-active-links");
     const qrScansEl = document.getElementById("stat-qr-scans");
+    const docConversionsEl = document.getElementById("stat-doc-conversions");
+    const qrGeneratedEl = document.getElementById("stat-qr-generated");
     
     if (totalLinksEl) totalLinksEl.innerText = totalLinks.toLocaleString();
     if (totalClicksEl) totalClicksEl.innerText = totalClicks.toLocaleString();
     if (activeLinksEl) activeLinksEl.innerText = activeLinks.toLocaleString();
     if (qrScansEl) qrScansEl.innerText = qrScans.toLocaleString();
+    if (docConversionsEl) docConversionsEl.innerText = liveStats.docConversions.toLocaleString();
+    if (qrGeneratedEl) qrGeneratedEl.innerText = liveStats.qrGenerated.toLocaleString();
 }
+
+window.addEventListener("enly_stats_updated", () => calculateStats());
 
 function renderUrlsTable(filterQuery = "") {
     const tableBody = document.getElementById("urls-table-body");
@@ -704,7 +719,7 @@ async function setupSettingsToggle() {
 
             try {
                 const docRef = doc(db, "config", "features");
-                await setDoc(docRef, { badgePageEnabled: isChecked });
+                await setDoc(docRef, { badgePageEnabled: isChecked }, { merge: true });
                 showToast(isChecked ? "Event Badge page is now public!" : "Event Badge page is now hidden!");
             } catch (err) {
                 console.error("Error updating badge page config:", err);
@@ -716,4 +731,116 @@ async function setupSettingsToggle() {
             }
         });
     }
+}
+
+function setupTabSwitching() {
+    const tabOverview = document.getElementById("tab-overview");
+    const tabMobile = document.getElementById("tab-mobile-visibility");
+    const viewOverview = document.getElementById("view-overview-content");
+    const viewMobile = document.getElementById("view-mobile-visibility-content");
+
+    if (tabOverview && tabMobile && viewOverview && viewMobile) {
+        tabOverview.addEventListener("click", () => {
+            tabOverview.classList.add("active");
+            tabOverview.style.borderBottomColor = "var(--primary)";
+            tabOverview.style.color = "var(--text-primary)";
+            
+            tabMobile.classList.remove("active");
+            tabMobile.style.borderBottomColor = "transparent";
+            tabMobile.style.color = "var(--text-secondary)";
+            
+            viewOverview.style.display = "block";
+            viewMobile.style.display = "none";
+        });
+
+        tabMobile.addEventListener("click", () => {
+            tabMobile.classList.add("active");
+            tabMobile.style.borderBottomColor = "var(--primary)";
+            tabMobile.style.color = "var(--text-primary)";
+            
+            tabOverview.classList.remove("active");
+            tabOverview.style.borderBottomColor = "transparent";
+            tabOverview.style.color = "var(--text-secondary)";
+            
+            viewOverview.style.display = "none";
+            viewMobile.style.display = "block";
+        });
+    }
+}
+
+async function setupMobileVisibilityToggles() {
+    const shortenerToggle = document.getElementById("mobile-shortener-toggle");
+    const shortenerLabel = document.getElementById("mobile-shortener-label");
+    
+    const qrToggle = document.getElementById("mobile-qr-toggle");
+    const qrLabel = document.getElementById("mobile-qr-label");
+    
+    const badgeToggle = document.getElementById("mobile-badge-toggle");
+    const badgeLabel = document.getElementById("mobile-badge-label");
+    
+    const aboutToggle = document.getElementById("mobile-about-toggle");
+    const aboutLabel = document.getElementById("mobile-about-label");
+
+    if (!shortenerToggle || !qrToggle || !badgeToggle || !aboutToggle) return;
+
+    // Load initial states from config/features
+    try {
+        const docRef = doc(db, "config", "features");
+        const docSnap = await getDoc(docRef);
+        
+        let shortenerVisible = false; // default hidden
+        let qrVisible = true;        // default visible
+        let badgeVisible = true;     // default visible
+        let aboutVisible = true;     // default visible
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.shortenerMobileVisible !== undefined) shortenerVisible = data.shortenerMobileVisible;
+            if (data.qrMobileVisible !== undefined) qrVisible = data.qrMobileVisible;
+            if (data.badgeMobileVisible !== undefined) badgeVisible = data.badgeMobileVisible;
+            if (data.aboutMobileVisible !== undefined) aboutVisible = data.aboutMobileVisible;
+        }
+
+        // Apply to UI
+        const applyUI = (toggle, label, visible) => {
+            toggle.checked = visible;
+            label.innerText = visible ? "Visible" : "Hidden";
+            label.style.color = visible ? "var(--success)" : "var(--text-secondary)";
+        };
+
+        applyUI(shortenerToggle, shortenerLabel, shortenerVisible);
+        applyUI(qrToggle, qrLabel, qrVisible);
+        applyUI(badgeToggle, badgeLabel, badgeVisible);
+        applyUI(aboutToggle, aboutLabel, aboutVisible);
+
+    } catch (err) {
+        console.error("Error fetching mobile visibility settings:", err);
+    }
+
+    // Bind change listener
+    const bindToggleListener = (toggle, label, fieldName, successMsg) => {
+        toggle.addEventListener("change", async () => {
+            const isChecked = toggle.checked;
+            label.innerText = isChecked ? "Visible" : "Hidden";
+            label.style.color = isChecked ? "var(--success)" : "var(--text-secondary)";
+
+            try {
+                const docRef = doc(db, "config", "features");
+                await setDoc(docRef, { [fieldName]: isChecked }, { merge: true });
+                showToast(successMsg + (isChecked ? " visible on mobile!" : " hidden on mobile!"));
+            } catch (err) {
+                console.error(`Error updating ${fieldName}:`, err);
+                showToast("Failed to update visibility setting.", "error");
+                // revert
+                toggle.checked = !isChecked;
+                label.innerText = !isChecked ? "Visible" : "Hidden";
+                label.style.color = !isChecked ? "var(--success)" : "var(--text-secondary)";
+            }
+        });
+    };
+
+    bindToggleListener(shortenerToggle, shortenerLabel, "shortenerMobileVisible", "Shortener is now");
+    bindToggleListener(qrToggle, qrLabel, "qrMobileVisible", "Custom QR is now");
+    bindToggleListener(badgeToggle, badgeLabel, "badgeMobileVisible", "Event Badge is now");
+    bindToggleListener(aboutToggle, aboutLabel, "aboutMobileVisible", "About page is now");
 }

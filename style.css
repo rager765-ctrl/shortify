@@ -573,6 +573,9 @@ header .container {
     .hide-mobile {
         display: none !important;
     }
+    .mobile-hidden {
+        display: none !important;
+    }
     .dashboard-grid {
         grid-template-columns: 1fr;
     }

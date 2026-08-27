@@ -251,24 +251,64 @@ export function showConfigOverlay() {
     });
 }
 
-// Real-time listener for Event Badge page visibility
+// Real-time listener for Event Badge and Page visibility controls
 if (configured && db) {
     try {
         let badgePageEnabled = true;
         let currentUserIsAdmin = false;
+        
+        let shortenerMobileVisible = false; // default false
+        let qrMobileVisible = true;        // default true
+        let badgeMobileVisible = true;     // default true
+        let aboutMobileVisible = true;     // default true
 
-        const evaluateBadgePageVisibility = () => {
-            // 1. Update all Event Badge links in the navbars/headers
-            const badgeLinks = document.querySelectorAll('a[href="badge-generator.html"]');
+        const evaluatePageVisibility = () => {
+            // 1. Update all Event Badge links in the navbars/headers (nav-link only)
+            const badgeLinks = document.querySelectorAll('a.nav-link[href="badge-generator.html"]');
             badgeLinks.forEach(link => {
                 if (badgePageEnabled || currentUserIsAdmin) {
                     link.classList.remove("badge-link-hidden");
+                    if (badgeMobileVisible) {
+                        link.classList.remove("mobile-hidden");
+                    } else {
+                        link.classList.add("mobile-hidden");
+                    }
                 } else {
                     link.classList.add("badge-link-hidden");
                 }
             });
+
+            // 2. Update Shortener links (nav-link only to avoid hiding the logo or return buttons)
+            const shortenerLinks = document.querySelectorAll('a.nav-link[href="index.html"]');
+            shortenerLinks.forEach(link => {
+                if (shortenerMobileVisible) {
+                    link.classList.remove("mobile-hidden");
+                } else {
+                    link.classList.add("mobile-hidden");
+                }
+            });
+
+            // 3. Update Custom QR links (nav-link only)
+            const qrLinks = document.querySelectorAll('a.nav-link[href="qr-generator.html"]');
+            qrLinks.forEach(link => {
+                if (qrMobileVisible) {
+                    link.classList.remove("mobile-hidden");
+                } else {
+                    link.classList.add("mobile-hidden");
+                }
+            });
+
+            // 4. Update About links (nav-link only)
+            const aboutLinks = document.querySelectorAll('a.nav-link[href="about.html"]');
+            aboutLinks.forEach(link => {
+                if (aboutMobileVisible) {
+                    link.classList.remove("mobile-hidden");
+                } else {
+                    link.classList.add("mobile-hidden");
+                }
+            });
             
-            // 2. If we are on the badge-generator page itself, handle deactivated state
+            // 5. If we are on the badge-generator page itself, handle deactivated state
             if (window.location.pathname.includes("badge-generator")) {
                 let overlay = document.getElementById("badge-deactivated-overlay");
                 const shouldHideContent = !badgePageEnabled && !currentUserIsAdmin;
@@ -334,18 +374,27 @@ if (configured && db) {
             } else {
                 currentUserIsAdmin = false;
             }
-            evaluateBadgePageVisibility();
+            evaluatePageVisibility();
         });
 
         // Listen for Firestore config updates
         const featuresDocRef = doc(db, "config", "features");
         onSnapshot(featuresDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                badgePageEnabled = docSnap.data().badgePageEnabled !== false;
+                const data = docSnap.data();
+                badgePageEnabled = data.badgePageEnabled !== false;
+                shortenerMobileVisible = data.shortenerMobileVisible === true;
+                qrMobileVisible = data.qrMobileVisible !== false;
+                badgeMobileVisible = data.badgeMobileVisible !== false;
+                aboutMobileVisible = data.aboutMobileVisible !== false;
             } else {
                 badgePageEnabled = true;
+                shortenerMobileVisible = false;
+                qrMobileVisible = true;
+                badgeMobileVisible = true;
+                aboutMobileVisible = true;
             }
-            evaluateBadgePageVisibility();
+            evaluatePageVisibility();
         }, (error) => {
             console.error("Error listening to features config:", error);
         });
