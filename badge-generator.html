@@ -8,6 +8,13 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <meta name="theme-color" content="#d97706">
+    <!-- PWA Web App Manifest & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Enly">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <script src="pwa.js" defer></script>
     <!-- Load qr-code-styling library -->
     <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     <!-- Load html2canvas for high quality PNG export -->
@@ -614,6 +621,8 @@
             <nav class="nav-links">
                 <a href="index.html" class="nav-link">Shortener</a>
                 <a href="qr-generator.html" class="nav-link">Custom QR</a>
+                <a href="converter.html" class="nav-link">Doc Converter</a>
+                <a href="scanner.html" class="nav-link">Docx Scanner</a>
                 <a href="badge-generator.html" class="nav-link active badge-link-hidden">Event Badges</a>
                 <a href="about.html" class="nav-link">About &amp; Help</a>
                 <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
@@ -627,7 +636,7 @@
         
         <!-- Hero Section -->
         <section class="hero animate-fade" style="padding-top: 40px; padding-bottom: 20px;">
-            <h1>Create custom attendee <br><span style="background: linear-gradient(135deg, #10b981, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Summit Event Badges</span></h1>
+            <h1>Create custom attendee <br><span style="background: linear-gradient(135deg, #10b981, #d97706); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Summit Event Badges</span></h1>
             <p style="font-size: 15px; margin-bottom: 0; max-width: 600px; margin-left: auto; margin-right: auto;">
                 Create stunning event badges for BIT KNUST and beyond. Customize attendee names, profile pictures, categories, and generate embedded QR passes.
             </p>

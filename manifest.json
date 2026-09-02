@@ -1,29 +1,17 @@
 {
-  "name": "Enly | Premium URL Shortener",
+  "name": "Enly - URL Shortener, QR & Document Scanner Studio",
   "short_name": "Enly",
-  "description": "Shorten links, create custom QR codes, design event badges, and track real-time statistics.",
-  "start_url": ".",
+  "description": "Shorten links, generate custom QR codes, convert files, and scan printed documents into polished PDFs.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4f5f8",
+  "background_color": "#ffffff",
   "theme_color": "#d97706",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "icon.svg",
+      "sizes": "192x192 512x512",
       "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any"
-    },
-    {
-      "src": "icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
       "purpose": "any maskable"
     }
   ]

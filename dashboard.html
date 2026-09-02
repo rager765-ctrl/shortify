@@ -18,6 +18,13 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <meta name="theme-color" content="#d97706">
+    <!-- PWA Web App Manifest & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Enly">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <script src="pwa.js" defer></script>
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <style>
@@ -49,6 +56,7 @@
                 <a href="index.html" class="nav-link">Shortener</a>
                 <a href="qr-generator.html" class="nav-link">Custom QR</a>
                 <a href="converter.html" class="nav-link">Doc Converter</a>
+                <a href="scanner.html" class="nav-link">Docx Scanner</a>
                 <a href="badge-generator.html" class="nav-link badge-link-hidden">Event Badges</a>
                 <a href="about.html" class="nav-link">About</a>
                 <button id="logout-btn" class="btn btn-secondary">Logout</button>

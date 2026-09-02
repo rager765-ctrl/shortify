@@ -12,6 +12,13 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
     <meta name="theme-color" content="#d97706">
+    <!-- PWA Web App Manifest & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Enly">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <script src="pwa.js" defer></script>
 
     <!-- Third-Party Processing Libraries for Document Conversion -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -291,6 +298,7 @@
                 <a href="index.html" class="nav-link">Shortener</a>
                 <a href="qr-generator.html" class="nav-link">Custom QR</a>
                 <a href="converter.html" class="nav-link active">Doc Converter</a>
+                <a href="scanner.html" class="nav-link">Docx Scanner</a>
                 <a href="badge-generator.html" class="nav-link badge-link-hidden">Event Badges</a>
                 <a href="about.html" class="nav-link">About &amp; Help</a>
                 <a href="login.html" class="btn btn-secondary hide-mobile">Admin Dashboard</a>
@@ -308,13 +316,14 @@
                 100% Client-Side &amp; Private Document Engine
             </div>
             <h1>Universal Document &amp; Presentation <br><span style="background: linear-gradient(135deg, var(--accent), #e11d48); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">File Converter</span></h1>
-            <p style="color: var(--text-secondary); max-width: 600px; margin: 10px auto 0; font-size: 15px;">
-                Convert PPTX, DOCX, PDF, Excel spreadsheets, Markdown, and images instantly right inside your browser without uploading your files to any external server.
-            </p>
         </section>
 
         <!-- Quick Action Presets -->
         <div class="preset-pills animate-fade">
+            <a href="scanner.html" class="preset-pill" style="background: var(--accent-glow); border-color: rgba(217, 119, 6, 0.4); color: var(--accent); text-decoration: none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                <span>📷 Scan Printed Files / DOCX</span>
+            </a>
             <div class="preset-pill active" data-from="pptx" data-to="pdf">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <span>PPTX → PDF</span>

@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
         orientation: 'portrait',
         margins: 'normal',
         watermark: '',
-        headerText: 'ENLY SCANNED DOCUMENT',
-        footerOption: 'page_num',
-        theme: 'executive'
+        headerText: '',
+        footerOption: 'none',
+        theme: 'paper'
     };
 
     // --- DOM Elements ---
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const contrastSlider = document.getElementById('contrast-slider');
     const brightnessVal = document.getElementById('brightness-val');
     const contrastVal = document.getElementById('contrast-val');
+    const autoCropBtn = document.getElementById('auto-crop-btn');
     const rotateLeftBtn = document.getElementById('rotate-left-btn');
     const ocrExtractBtn = document.getElementById('ocr-extract-btn');
 
@@ -68,7 +69,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Init Date in Header ---
     const todayStr = new Date().toISOString().split('T')[0];
-    if (paperHeaderDate) paperHeaderDate.textContent = todayStr;
+
+    // --- Auto-Crop Engine for Document Capture ---
+    function autoCropImage(img) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            if (!w || !h) {
+                resolve(img);
+                return;
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            try {
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+
+                let minX = w, minY = h, maxX = 0, maxY = 0;
+                let paperPixelsFound = 0;
+
+                const step = Math.max(1, Math.floor(Math.min(w, h) / 250));
+
+                for (let y = 0; y < h; y += step) {
+                    for (let x = 0; x < w; x += step) {
+                        const idx = (y * w + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                        // Detect document paper pixels (pixels brighter than dark table background)
+                        if (lum > 45) {
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                            paperPixelsFound++;
+                        }
+                    }
+                }
+
+                const cropW = maxX - minX;
+                const cropH = maxY - minY;
+
+                // If valid document bounding area is detected
+                if (paperPixelsFound > 20 && cropW > w * 0.25 && cropH > h * 0.25) {
+                    minX = Math.max(0, minX - 8);
+                    minY = Math.max(0, minY - 8);
+                    maxX = Math.min(w, maxX + 8);
+                    maxY = Math.min(h, maxY + 8);
+
+                    const finalW = maxX - minX;
+                    const finalH = maxY - minY;
+
+                    const croppedCanvas = document.createElement('canvas');
+                    croppedCanvas.width = finalW;
+                    croppedCanvas.height = finalH;
+
+                    const croppedCtx = croppedCanvas.getContext('2d');
+                    croppedCtx.drawImage(canvas, minX, minY, finalW, finalH, 0, 0, finalW, finalH);
+
+                    const croppedImg = new Image();
+                    croppedImg.onload = () => resolve(croppedImg);
+                    croppedImg.onerror = () => resolve(img);
+                    croppedImg.src = croppedCanvas.toDataURL('image/jpeg', 0.95);
+                } else {
+                    // Fallback to 4% margin crop
+                    cropInnerMargin(canvas, w, h).then(resolve);
+                }
+            } catch (e) {
+                console.warn('Auto crop fallback:', e);
+                resolve(img);
+            }
+        });
+    }
+
+    function cropInnerMargin(canvas, w, h) {
+        return new Promise((resolve) => {
+            const marginX = Math.floor(w * 0.04);
+            const marginY = Math.floor(h * 0.04);
+            const cropW = Math.floor(w * 0.92);
+            const cropH = Math.floor(h * 0.92);
+
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = cropW;
+            croppedCanvas.height = cropH;
+
+            const croppedCtx = croppedCanvas.getContext('2d');
+            croppedCtx.drawImage(canvas, marginX, marginY, cropW, cropH, 0, 0, cropW, cropH);
+
+            const croppedImg = new Image();
+            croppedImg.onload = () => resolve(croppedImg);
+            croppedImg.onerror = () => resolve(canvas);
+            croppedImg.src = croppedCanvas.toDataURL('image/jpeg', 0.95);
+        });
+    }
 
     // --- Event Listeners: Image & DOCX Uploads ---
     uploadScansBtn.addEventListener('click', () => imageFileInput.click());
@@ -175,12 +276,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Page Management ---
-    function addPageFromImage(img) {
+    async function addPageFromImage(img) {
+        const croppedImg = await autoCropImage(img);
         const pageId = 'page_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
         const pageObj = {
             id: pageId,
             type: 'image',
-            originalImage: img,
+            originalImage: croppedImg,
             filter: 'magic',
             brightness: 100,
             contrast: 100,
@@ -485,6 +587,27 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePreview();
     });
 
+    if (autoCropBtn) {
+        autoCropBtn.addEventListener('click', async () => {
+            if (selectedIndex < 0 || selectedIndex >= pages.length) return;
+            const page = pages[selectedIndex];
+            if (page.type !== 'image' || !page.originalImage) return;
+
+            autoCropBtn.disabled = true;
+            const spanLabel = autoCropBtn.querySelector('span');
+            if (spanLabel) spanLabel.textContent = 'Cropping...';
+
+            const croppedImg = await autoCropImage(page.originalImage);
+            page.originalImage = croppedImg;
+            page.processedCanvas = renderProcessedCanvas(page);
+
+            autoCropBtn.disabled = false;
+            if (spanLabel) spanLabel.textContent = 'Auto Crop';
+            renderPagesList();
+            updatePreview();
+        });
+    }
+
     // --- OCR Text Extractor ---
     ocrExtractBtn.addEventListener('click', () => {
         if (selectedIndex < 0 || selectedIndex >= pages.length) return;
@@ -577,33 +700,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pdfConfig.margins === 'wide') marginPx = '36px';
         if (pdfConfig.margins === 'zero') marginPx = '0px';
 
-        paperBodyContent.style.top = pdfConfig.margins === 'zero' ? '0px' : '48px';
-        paperBodyContent.style.bottom = pdfConfig.margins === 'zero' ? '0px' : '48px';
+        const hasHeader = pdfConfig.headerText && pdfConfig.headerText.trim() !== '';
+        const hasFooter = pdfConfig.footerOption !== 'none';
+
+        paperBodyContent.style.top = (!hasHeader || pdfConfig.margins === 'zero') ? '0px' : '48px';
+        paperBodyContent.style.bottom = (!hasFooter || pdfConfig.margins === 'zero') ? '0px' : '48px';
         paperBodyContent.style.left = marginPx;
         paperBodyContent.style.right = marginPx;
 
-        // Watermark Text
-        if (pdfConfig.watermark && pdfConfig.watermark.trim() !== '') {
-            watermarkDisplay.style.display = 'block';
-            watermarkDisplay.textContent = pdfConfig.watermark;
-        } else {
-            watermarkDisplay.style.display = 'none';
-        }
-
-        // Header Title
-        if (paperHeaderLeft) {
-            paperHeaderLeft.textContent = pdfConfig.headerText || 'ENLY SCANNED DOCUMENT';
-        }
-
-        // Footer Text & Page Numbering
-        if (paperFooterPage) {
-            const currPageNum = selectedIndex >= 0 ? selectedIndex + 1 : 1;
-            const totalPages = pages.length > 0 ? pages.length : 1;
-            if (pdfConfig.footerOption === 'none') {
-                paperFooterPage.style.display = 'none';
+        // Watermark Text (Only if explicitly typed)
+        if (watermarkDisplay) {
+            if (pdfConfig.watermark && pdfConfig.watermark.trim() !== '') {
+                watermarkDisplay.style.display = 'block';
+                watermarkDisplay.textContent = pdfConfig.watermark;
             } else {
-                paperFooterPage.style.display = 'block';
-                paperFooterPage.textContent = `Page ${currPageNum} of ${totalPages}`;
+                watermarkDisplay.style.display = 'none';
+            }
+        }
+
+        // Header Title (Only if explicitly typed)
+        if (paperHeaderLeft && paperHeaderLeft.parentElement) {
+            if (hasHeader) {
+                paperHeaderLeft.parentElement.style.display = 'flex';
+                paperHeaderLeft.textContent = pdfConfig.headerText;
+            } else {
+                paperHeaderLeft.parentElement.style.display = 'none';
+            }
+        }
+
+        // Footer Text & Page Numbering (Only if explicitly selected)
+        if (paperFooterPage && paperFooterPage.parentElement) {
+            if (hasFooter) {
+                paperFooterPage.parentElement.style.display = 'flex';
+                const currPageNum = selectedIndex >= 0 ? selectedIndex + 1 : 1;
+                const totalPages = pages.length > 0 ? pages.length : 1;
+                if (pdfConfig.footerOption === 'page_num') {
+                    paperFooterPage.textContent = `Page ${currPageNum} of ${totalPages}`;
+                } else if (pdfConfig.footerOption === 'date_num') {
+                    paperFooterPage.textContent = `${todayStr} • Page ${currPageNum} of ${totalPages}`;
+                }
+            } else {
+                paperFooterPage.parentElement.style.display = 'none';
             }
         }
 
@@ -669,19 +806,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pdfConfig.margins === 'wide') marginMm = 30;
                 if (pdfConfig.margins === 'zero') marginMm = 0;
 
-                // Render Header if not zero margin
-                if (marginMm > 0) {
+                const hasHeader = marginMm > 0 && pdfConfig.headerText && pdfConfig.headerText.trim() !== '';
+                const hasFooter = marginMm > 0 && pdfConfig.footerOption !== 'none';
+
+                // Render Header if non-empty header text specified
+                if (hasHeader) {
                     doc.setFontSize(9);
                     doc.setTextColor(100, 116, 139);
-                    doc.text(pdfConfig.headerText || 'ENLY SCANNED DOCUMENT', marginMm, 12);
+                    doc.text(pdfConfig.headerText, marginMm, 12);
                     doc.text(todayStr, pdfWidth - marginMm, 12, { align: 'right' });
                     doc.setDrawColor(226, 232, 240);
                     doc.line(marginMm, 14, pdfWidth - marginMm, 14);
                 }
 
-                // Draw Page Image or Text
-                const contentTop = marginMm > 0 ? 18 : 0;
-                const contentHeight = marginMm > 0 ? pdfHeight - 34 : pdfHeight;
+                // Draw Page Image or Text (Clean positioning)
+                const contentTop = hasHeader ? 18 : marginMm;
+                const contentBottomMargin = hasFooter ? 16 : marginMm;
+                const contentHeight = pdfHeight - contentTop - contentBottomMargin;
                 const contentWidth = pdfWidth - (marginMm * 2);
 
                 if (page.type === 'image' && page.processedCanvas) {
@@ -695,7 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     doc.text(splitLines, marginMm, contentTop + 6);
                 }
 
-                // Render Watermark
+                // Render Watermark ONLY if explicitly specified
                 if (pdfConfig.watermark && pdfConfig.watermark.trim() !== '') {
                     doc.saveGraphicsState();
                     doc.setFontSize(36);
@@ -707,19 +848,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     doc.restoreGraphicsState();
                 }
 
-                // Render Footer Page Numbers
-                if (marginMm > 0 && pdfConfig.footerOption !== 'none') {
+                // Render Footer Page Numbers ONLY if option enabled (No CONFIDENTIAL watermark string!)
+                if (hasFooter) {
                     doc.setDrawColor(226, 232, 240);
                     doc.line(marginMm, pdfHeight - 14, pdfWidth - marginMm, pdfHeight - 14);
                     doc.setFontSize(9);
                     doc.setTextColor(100, 116, 139);
-                    doc.text(`CONFIDENTIAL`, marginMm, pdfHeight - 8);
-                    doc.text(`Page ${i + 1} of ${pages.length}`, pdfWidth - marginMm, pdfHeight - 8, { align: 'right' });
+                    if (pdfConfig.footerOption === 'page_num') {
+                        doc.text(`Page ${i + 1} of ${pages.length}`, pdfWidth - marginMm, pdfHeight - 8, { align: 'right' });
+                    } else if (pdfConfig.footerOption === 'date_num') {
+                        doc.text(`${todayStr} • Page ${i + 1} of ${pages.length}`, pdfWidth - marginMm, pdfHeight - 8, { align: 'right' });
+                    }
                 }
             }
 
             const timeStamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            doc.save(`Enly_Scanned_Document_${timeStamp}.pdf`);
+            doc.save(`Scanned_Document_${timeStamp}.pdf`);
 
         } catch (err) {
             console.error('PDF Export Error:', err);

@@ -24,18 +24,15 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <meta name="theme-color" content="#d97706">
+    <!-- PWA Web App Manifest & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Enly">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <script src="pwa.js" defer></script>
     <!-- Load QRCode.js library via jsDelivr CDN -->
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
-    <script>
-        // Unregister existing Service Workers (legacy PWA cleanup — silent, no reload)
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-                for (let reg of registrations) {
-                    reg.unregister();
-                }
-            });
-        }
-    </script>
 </head>
 <body>
 

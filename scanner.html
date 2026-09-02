@@ -20,16 +20,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-    <script>
-        // Unregister existing Service Workers
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-                for (let reg of registrations) {
-                    reg.unregister();
-                }
-            });
-        }
-    </script>
+    <!-- PWA Web App Manifest & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Enly">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <script src="pwa.js" defer></script>
 </head>
 <body>
 
@@ -171,13 +168,17 @@
                     </div>
 
                     <div style="margin-top: 16px; display: flex; gap: 8px;">
-                        <button class="btn btn-secondary" id="rotate-left-btn" style="flex: 1; padding: 8px 12px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Rotate 90° Left">
+                        <button class="btn btn-secondary" id="auto-crop-btn" style="flex: 1; padding: 8px 10px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Auto-crop document edges">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>
+                            <span>Auto Crop</span>
+                        </button>
+                        <button class="btn btn-secondary" id="rotate-left-btn" style="flex: 1; padding: 8px 10px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Rotate 90° Left">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                             <span>Rotate</span>
                         </button>
-                        <button class="btn btn-secondary" id="ocr-extract-btn" style="flex: 1.5; padding: 8px 12px; font-size: 12px; background: rgba(217, 119, 6, 0.08); color: var(--accent); border-color: rgba(217, 119, 6, 0.3); display: flex; align-items: center; justify-content: center; gap: 6px;" title="Extract Text with OCR">
+                        <button class="btn btn-secondary" id="ocr-extract-btn" style="flex: 1.2; padding: 8px 10px; font-size: 12px; background: rgba(217, 119, 6, 0.08); color: var(--accent); border-color: rgba(217, 119, 6, 0.3); display: flex; align-items: center; justify-content: center; gap: 6px;" title="Extract Text with OCR">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <span>Extract Text</span>
+                            <span>OCR Text</span>
                         </button>
                     </div>
                 </div>
@@ -224,23 +225,23 @@
                     </div>
 
                     <div>
-                        <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Watermark Text</label>
-                        <input type="text" id="pdf-watermark" placeholder="e.g. CONFIDENTIAL" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(0, 0, 0, 0.12); font-size: 13px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Watermark Text (Optional)</label>
+                        <input type="text" id="pdf-watermark" placeholder="None (Leave blank for clean scan)" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(0, 0, 0, 0.12); font-size: 13px;">
                     </div>
                 </div>
 
                 <!-- Header / Footer customization -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px;">
                     <div>
-                        <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Document Header Title</label>
-                        <input type="text" id="pdf-header-text" placeholder="e.g. Enly Scanned Document" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(0, 0, 0, 0.12); font-size: 13px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Document Header Title (Optional)</label>
+                        <input type="text" id="pdf-header-text" placeholder="None (Leave blank for clean scan)" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(0, 0, 0, 0.12); font-size: 13px;">
                     </div>
                     <div>
                         <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Footer Options</label>
                         <select id="pdf-footer-option" class="btn btn-secondary" style="width: 100%; text-align: left;">
+                            <option value="none" selected>None (Clean Scan - Pure User Work)</option>
                             <option value="page_num">Show Page Numbers (Page 1 of X)</option>
                             <option value="date_num">Show Date &amp; Page Numbers</option>
-                            <option value="none">None (Clean Footer)</option>
                         </select>
                     </div>
                 </div>
@@ -249,7 +250,7 @@
                 <div style="margin-bottom: 20px;">
                     <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px;">Polished Theme Preset</label>
                     <div class="theme-selector-grid">
-                        <div class="theme-preset-card active" data-theme="executive">
+                        <div class="theme-preset-card" data-theme="executive">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path></svg>
                             <span>Executive Corporate</span>
                         </div>
@@ -261,9 +262,9 @@
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h18"></path></svg>
                             <span>Formal Legal</span>
                         </div>
-                        <div class="theme-preset-card" data-theme="paper">
+                        <div class="theme-preset-card active" data-theme="paper">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                            <span>Paper Scan</span>
+                            <span>Pure Paper Scan</span>
                         </div>
                     </div>
                 </div>
@@ -271,10 +272,10 @@
                 <!-- Live Paper Document Sheet Preview Canvas -->
                 <div class="pdf-preview-box" id="preview-box">
                     <div class="paper-sheet a4" id="paper-sheet-display">
-                        <div class="paper-watermark" id="watermark-display" style="display: none;">CONFIDENTIAL</div>
-                        <div class="paper-header">
-                            <span id="paper-header-left">ENLY SCANNED DOCUMENT</span>
-                            <span id="paper-header-date">2026-09-02</span>
+                        <div class="paper-watermark" id="watermark-display" style="display: none;"></div>
+                        <div class="paper-header" style="display: none;">
+                            <span id="paper-header-left"></span>
+                            <span id="paper-header-date"></span>
                         </div>
                         
                         <div class="paper-body-content" id="paper-body-content">
@@ -287,9 +288,8 @@
                             </div>
                         </div>
 
-                        <div class="paper-footer">
-                            <span>CONFIDENTIAL</span>
-                            <span id="paper-footer-page">Page 1 of 1</span>
+                        <div class="paper-footer" style="display: none;">
+                            <span id="paper-footer-page"></span>
                         </div>
                     </div>
                 </div>
