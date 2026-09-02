@@ -7,7 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
-                .then((reg) => console.log('Enly PWA ServiceWorker registered:', reg.scope))
+                .then((reg) => {
+                    console.log('Enly PWA ServiceWorker registered:', reg.scope);
+                    // Force check for updated service worker
+                    if (reg.waiting) {
+                        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    reg.update();
+                })
                 .catch((err) => console.warn('ServiceWorker registration failed:', err));
         });
     }
