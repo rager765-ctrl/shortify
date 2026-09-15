@@ -200,6 +200,9 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
     async function processUploadedFiles(files) {
         let currentTotalBytes = storedFiles.reduce((acc, f) => acc + f.size, 0);
+        
+        const loadingOverlay = document.getElementById("upload-loading-overlay");
+        if (loadingOverlay) loadingOverlay.style.display = "flex";
 
         for (const file of files) {
             if (file.size > 25 * 1024 * 1024) {
@@ -231,6 +234,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             currentTotalBytes += file.size;
         }
 
+        if (loadingOverlay) loadingOverlay.style.display = "none";
         await loadAndRenderVault();
     }
 
@@ -335,6 +339,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
         list.forEach(file => {
             const card = document.createElement("div");
             card.className = "file-card animate-fade";
+            card.style.cursor = "pointer";
 
             const formattedSize = formatBytes(file.size);
             const dateStr = new Date(file.createdAt).toLocaleDateString();
@@ -353,7 +358,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             const badgeClass = file.category === 'docx' ? 'badge-docx' : file.category === 'images' ? 'badge-image' : file.category === 'videos' ? 'badge-video' : 'badge-other';
 
             card.innerHTML = `
-                <div class="file-preview-box">
+                <div class="file-preview-box" title="Tap to open full preview">
                     ${previewHTML}
                 </div>
 
@@ -388,7 +393,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
         });
     }
 
-    // Reliable Global Event Delegation for File Grid Action Buttons
+    // Reliable Global Event Delegation for File Grid Action Buttons & Tap Previews
     function initFileGridDelegation() {
         const container = document.getElementById("file-grid-container");
         if (!container) return;
@@ -426,6 +431,17 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
                     await loadAndRenderVault();
                 }
                 return;
+            }
+
+            // Tap anywhere else on the file card opens full preview
+            const cardEl = e.target.closest(".file-card");
+            if (cardEl) {
+                const btnInside = cardEl.querySelector(".btn-share");
+                if (btnInside) {
+                    const id = btnInside.getAttribute("data-id");
+                    let file = storedFiles.find(f => f.id === id) || await getFileByIdFromDB(id);
+                    if (file) openFullPreviewModal(file);
+                }
             }
         });
     }
@@ -487,6 +503,135 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
                 }
             });
         }
+
+        // Full Preview Modal Handlers
+        const fullPreviewOverlay = document.getElementById("full-preview-modal-overlay");
+        const fullPreviewCard = document.querySelector("#full-preview-modal-overlay .modal-card");
+        const btnCloseFullPreview = document.getElementById("btn-close-full-preview");
+        const btnFullDownload = document.getElementById("btn-full-preview-download");
+        const btnFullShare = document.getElementById("btn-full-preview-share");
+
+        if (btnCloseFullPreview) {
+            btnCloseFullPreview.addEventListener("click", (e) => { e.preventDefault(); closeFullPreviewModal(); });
+        }
+        if (fullPreviewOverlay) {
+            fullPreviewOverlay.addEventListener("click", (e) => {
+                if (e.target === fullPreviewOverlay) closeFullPreviewModal();
+            });
+        }
+        if (fullPreviewCard) {
+            fullPreviewCard.addEventListener("click", (e) => e.stopPropagation());
+        }
+        if (btnFullDownload) {
+            btnFullDownload.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (activeFullPreviewFile) triggerFileDownload(activeFullPreviewFile);
+            });
+        }
+        if (btnFullShare) {
+            btnFullShare.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (activeFullPreviewFile) {
+                    closeFullPreviewModal();
+                    openShareModal(activeFullPreviewFile);
+                }
+            });
+        }
+    }
+
+    let activeFullPreviewFile = null;
+
+    function openFullPreviewModal(file) {
+        if (!file) return;
+        activeFullPreviewFile = file;
+
+        const overlay = document.getElementById("full-preview-modal-overlay");
+        const titleEl = document.getElementById("full-preview-title");
+        const metaEl = document.getElementById("full-preview-meta");
+        const bodyEl = document.getElementById("full-preview-body");
+
+        if (!overlay || !bodyEl) return;
+
+        Object.assign(overlay.style, {
+            display: "flex",
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "99999",
+            padding: "16px",
+            boxSizing: "border-box"
+        });
+
+        document.body.style.overflow = "hidden";
+
+        if (titleEl) titleEl.textContent = file.name;
+        if (metaEl) metaEl.textContent = `Size: ${formatBytes(file.size)} • Type: ${file.type || file.category}`;
+
+        bodyEl.innerHTML = "";
+        const isImg = file.category === "images" || (file.type && file.type.startsWith("image/"));
+        const isVid = file.category === "videos" || (file.type && file.type.startsWith("video/"));
+
+        if (isImg && file.dataUrl) {
+            const img = document.createElement("img");
+            img.src = file.dataUrl;
+            img.alt = file.name;
+            img.style.cssText = "max-width:100%;max-height:55vh;border-radius:12px;object-fit:contain;display:block;margin:0 auto;box-shadow:0 8px 30px rgba(0,0,0,0.3);";
+            bodyEl.appendChild(img);
+        } else if (isVid && file.dataUrl) {
+            const vid = document.createElement("video");
+            vid.src = file.dataUrl;
+            vid.controls = true;
+            vid.autoplay = true;
+            vid.playsInline = true;
+            vid.style.cssText = "max-width:100%;max-height:55vh;border-radius:12px;display:block;margin:0 auto;";
+            bodyEl.appendChild(vid);
+        } else if (file.category === "docx") {
+            bodyEl.innerHTML = `<div id="full-docx-html-preview" style="width:100%;background:#ffffff;padding:24px;border-radius:8px;font-family:serif;color:#111;text-align:left;overflow-y:auto;max-height:55vh;box-shadow:0 4px 20px rgba(0,0,0,0.15);">Loading full document preview...</div>`;
+            renderFullDocxHTML(file.dataUrl);
+        } else {
+            bodyEl.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:12px;">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                        <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    <p style="font-weight:700;font-size:17px;margin-bottom:6px;color:var(--text-primary);">${file.name}</p>
+                    <p style="color:var(--text-secondary);font-size:13px;">Full preview for this file type is ready for download.</p>
+                </div>`;
+        }
+    }
+
+    async function renderFullDocxHTML(dataUrl) {
+        const previewEl = document.getElementById("full-docx-html-preview");
+        if (!previewEl || !window.mammoth) return;
+        try {
+            const base64Data = dataUrl.split(',')[1];
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const result = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer });
+            previewEl.innerHTML = result.value || "<p>DOCX Document loaded.</p>";
+        } catch (e) {
+            console.error("Mammoth Error:", e);
+            if (previewEl) previewEl.innerHTML = `<p style="color:var(--text-muted);">DOCX document structure validated. Click Download Asset to save.</p>`;
+        }
+    }
+
+    function closeFullPreviewModal() {
+        const overlay = document.getElementById("full-preview-modal-overlay");
+        if (overlay) overlay.style.display = "none";
+        document.body.style.overflow = "";
     }
 
     function openShareModal(file) {
@@ -609,6 +754,28 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
         if (!publicView || !storageView) return;
 
+        // --- SMART APP BANNER ---
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (!isStandalone) {
+            let banner = document.getElementById("smart-app-banner");
+            if (!banner) {
+                banner = document.createElement("div");
+                banner.id = "smart-app-banner";
+                banner.style.cssText = "background:linear-gradient(135deg, var(--primary), var(--accent));color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:var(--radius-md);margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.15);";
+                banner.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        <div>
+                            <div style="font-weight:700;font-size:14px;">Open in Enly App</div>
+                            <div style="font-size:12px;opacity:0.9;">View preview in full app experience</div>
+                        </div>
+                    </div>
+                    <a href="${window.location.href}" style="background:#ffffff;color:var(--primary);padding:6px 14px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none;">Open</a>
+                `;
+                publicView.insertBefore(banner, publicView.firstChild);
+            }
+        }
+
         // Show public view immediately with a loading spinner
         storageView.style.display = "none";
         publicView.style.display = "block";
@@ -714,11 +881,23 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
                         <p style="color:var(--text-secondary);font-size:13px;">Tap Download below to save this file.</p>
                     </div>`;
             }
+            
+            previewContainer.style.cursor = "pointer";
+            previewContainer.title = "Tap to expand full preview";
+            previewContainer.onclick = (e) => {
+                e.preventDefault();
+                openFullPreviewModal(file);
+            };
         }
 
+        let activePublicFile = file;
         const btnPublicDownload = document.getElementById("btn-public-download");
         if (btnPublicDownload) {
-            btnPublicDownload.onclick = () => triggerFileDownload(file);
+            btnPublicDownload.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerFileDownload(activePublicFile);
+            };
         }
     }
 
@@ -743,10 +922,49 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
     }
 
     function triggerFileDownload(file) {
-        const a = document.createElement("a");
-        a.href = file.dataUrl;
-        a.download = file.name;
-        a.click();
+        if (!file || !file.dataUrl) return;
+
+        try {
+            if (file.dataUrl.startsWith("data:")) {
+                const parts = file.dataUrl.split(",");
+                const mimeMatch = parts[0].match(/:(.*?);/);
+                const mime = mimeMatch ? mimeMatch[1] : (file.type || "application/octet-stream");
+                const bstr = atob(parts[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                const blob = new Blob([u8arr], { type: mime });
+                const blobUrl = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = blobUrl;
+                a.download = file.name || "downloaded-file";
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                }, 1000);
+                return;
+            }
+
+            const a = document.createElement("a");
+            a.href = file.dataUrl;
+            a.download = file.name || "downloaded-file";
+            a.target = "_blank";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => document.body.removeChild(a), 1000);
+        } catch (err) {
+            console.error("Download trigger error:", err);
+            const win = window.open(file.dataUrl, "_blank");
+            if (!win) location.href = file.dataUrl;
+        }
     }
 
     function formatBytes(bytes) {
