@@ -16,6 +16,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
     let storedFiles = [];
     let currentFilter = "all";
     let activeShareFile = null;
+    let modalOpenTimestamp = 0;
 
     // --- INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", async () => {
@@ -23,6 +24,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
         initUploaderHandlers();
         initFilterAndSearchHandlers();
         initModalHandlers();
+        initFileGridDelegation();
         await loadAndRenderVault();
         await checkURLShareParams();
     });
@@ -63,11 +65,11 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             }
         }
 
-        // 2. Save to LocalStorage Cloud Share Cache (for instant cross-tab & local share)
+        // 2. Save to LocalStorage Cloud Share Cache
         try {
             localStorage.setItem(`enly_shared_file_${fileRecord.id}`, JSON.stringify(fileRecord));
         } catch (e) {
-            console.warn("LocalStorage quota reached for large payload:", e);
+            console.warn("LocalStorage quota notice:", e);
         }
 
         // 3. Sync to Firebase Firestore if configured
@@ -103,7 +105,6 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
     }
 
     async function getFileByIdFromDB(id) {
-        // Priority 1: Check IndexedDB
         if (dbInstance) {
             const file = await new Promise((res) => {
                 const tx = dbInstance.transaction(STORE_NAME, "readonly");
@@ -115,22 +116,16 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             if (file) return file;
         }
 
-        // Priority 2: Check LocalStorage Cloud Cache
         const cached = localStorage.getItem(`enly_shared_file_${id}`);
         if (cached) {
-            try {
-                return JSON.parse(cached);
-            } catch (e) {}
+            try { return JSON.parse(cached); } catch (e) {}
         }
 
-        // Priority 3: Check Firebase Firestore
         if (configured && db) {
             try {
                 const docRef = doc(db, "cloud_shares", id);
                 const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    return snap.data();
-                }
+                if (snap.exists()) return snap.data();
             } catch (e) {
                 console.warn("Firestore fetch error:", e);
             }
@@ -153,7 +148,6 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
     function clearDB() {
         return new Promise((resolve) => {
-            // Clear local storage share items
             Object.keys(localStorage).forEach(k => {
                 if (k.startsWith("enly_shared_file_")) localStorage.removeItem(k);
             });
@@ -321,12 +315,10 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
         let list = storedFiles;
 
-        // Apply category filter
         if (currentFilter !== "all") {
             list = list.filter(f => f.category === currentFilter);
         }
 
-        // Apply search query
         if (searchQuery) {
             list = list.filter(f => f.name.toLowerCase().includes(searchQuery));
         }
@@ -347,7 +339,6 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             const formattedSize = formatBytes(file.size);
             const dateStr = new Date(file.createdAt).toLocaleDateString();
 
-            // Preview Box HTML based on file category
             let previewHTML = "";
             if (file.category === 'images' || (file.type && file.type.startsWith('image/'))) {
                 previewHTML = `<img src="${file.dataUrl}" alt="${file.name}" loading="lazy">`;
@@ -380,14 +371,14 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
                 </div>
 
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn btn-primary btn-share" data-id="${file.id}" style="flex: 1; padding: 6px 10px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                        <span>Share QR</span>
+                    <button class="btn btn-primary btn-share" data-id="${file.id}" style="flex: 1; padding: 8px 12px; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; position: relative; z-index: 2;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        <span style="pointer-events:none; font-weight: 700;">Share QR</span>
                     </button>
-                    <button class="btn btn-secondary btn-download" data-id="${file.id}" style="padding: 6px 10px; font-size: 12px;" title="Download File">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <button class="btn btn-secondary btn-download" data-id="${file.id}" style="padding: 8px 10px; font-size: 12px; cursor: pointer; position: relative; z-index: 2;" title="Download File">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
-                    <button class="btn btn-secondary btn-delete" data-id="${file.id}" style="padding: 6px 10px; font-size: 12px; color: var(--danger);" title="Delete File">
+                    <button class="btn btn-secondary btn-delete" data-id="${file.id}" style="padding: 8px 10px; font-size: 12px; color: var(--danger); cursor: pointer; position: relative; z-index: 2;" title="Delete File">
                         &times;
                     </button>
                 </div>
@@ -395,44 +386,51 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
             container.appendChild(card);
         });
+    }
 
-        // Bind Action Buttons
-        container.querySelectorAll(".btn-share").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+    // Reliable Global Event Delegation for File Grid Action Buttons
+    function initFileGridDelegation() {
+        const container = document.getElementById("file-grid-container");
+        if (!container) return;
+
+        container.addEventListener("click", async (e) => {
+            const shareBtn = e.target.closest(".btn-share");
+            if (shareBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const id = btn.getAttribute("data-id");
-                const file = storedFiles.find(f => f.id === id);
-                if (file) openShareModal(file);
-            });
-        });
+                const id = shareBtn.getAttribute("data-id");
+                let file = storedFiles.find(f => f.id === id) || await getFileByIdFromDB(id);
+                if (file) {
+                    openShareModal(file);
+                }
+                return;
+            }
 
-        container.querySelectorAll(".btn-download").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            const downloadBtn = e.target.closest(".btn-download");
+            if (downloadBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const id = btn.getAttribute("data-id");
-                const file = storedFiles.find(f => f.id === id);
+                const id = downloadBtn.getAttribute("data-id");
+                let file = storedFiles.find(f => f.id === id) || await getFileByIdFromDB(id);
                 if (file) triggerFileDownload(file);
-            });
-        });
+                return;
+            }
 
-        container.querySelectorAll(".btn-delete").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
+            const deleteBtn = e.target.closest(".btn-delete");
+            if (deleteBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const id = btn.getAttribute("data-id");
+                const id = deleteBtn.getAttribute("data-id");
                 if (confirm("Delete this file from your cloud vault?")) {
                     await deleteFileFromDB(id);
                     await loadAndRenderVault();
                 }
-            });
+                return;
+            }
         });
     }
 
     // --- SHARE MODAL & SCANNABLE QR CODE HANDLER ---
-    let modalOpenTimestamp = 0;
-
     function initModalHandlers() {
         const modalOverlay = document.getElementById("share-modal-overlay");
         const modalCard = document.querySelector("#share-modal-overlay .modal-card");
@@ -440,11 +438,13 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
         const btnCopy = document.getElementById("btn-copy-share-url");
         const btnDownloadQR = document.getElementById("btn-download-share-qr");
 
-        if (btnClose) btnClose.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            closeShareModal();
-        });
+        if (btnClose) {
+            btnClose.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeShareModal();
+            });
+        }
 
         if (modalCard) {
             modalCard.addEventListener("click", (e) => e.stopPropagation());
@@ -452,7 +452,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
         if (modalOverlay) {
             modalOverlay.addEventListener("click", (e) => {
-                if (Date.now() - modalOpenTimestamp < 350) return; // Prevent instant closing from click bubbling
+                if (Date.now() - modalOpenTimestamp < 350) return;
                 if (e.target === modalOverlay) closeShareModal();
             });
         }
@@ -490,14 +490,37 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
     }
 
     function openShareModal(file) {
+        if (!file) return;
         modalOpenTimestamp = Date.now();
         activeShareFile = file;
+
         const modalOverlay = document.getElementById("share-modal-overlay");
         const filenameEl = document.getElementById("share-modal-filename");
         const urlInput = document.getElementById("share-url-input");
         const qrContainer = document.getElementById("share-qrcode");
 
         if (!modalOverlay || !urlInput || !qrContainer) return;
+
+        // Force all overlay styles inline — bypasses any CSS class conflicts
+        Object.assign(modalOverlay.style, {
+            display: "flex",
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "rgba(0, 0, 0, 0.55)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "99999",
+            padding: "20px",
+            boxSizing: "border-box"
+        });
+
+        // Lock body scroll
+        document.body.style.overflow = "hidden";
 
         filenameEl.textContent = file.name;
 
@@ -511,25 +534,45 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
         // Clear existing QR Code & render new scannable QR Code
         qrContainer.innerHTML = "";
-        if (typeof QRCode !== 'undefined') {
-            new QRCode(qrContainer, {
-                text: shareURL,
-                width: 180,
-                height: 180,
-                colorDark: "#0f172a",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        } else {
-            qrContainer.innerHTML = `<p style="font-size: 11px; color: var(--text-secondary);">QR Code Ready</p>`;
+        try {
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrContainer, {
+                    text: shareURL,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                renderFallbackQR(qrContainer, shareURL);
+            }
+        } catch (err) {
+            console.warn("QRCode JS Render Warning, using fallback:", err);
+            renderFallbackQR(qrContainer, shareURL);
         }
+    }
 
-        modalOverlay.style.display = "flex";
+    function renderFallbackQR(container, text) {
+        container.innerHTML = "";
+        const img = document.createElement("img");
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(text)}`;
+        img.alt = "Scannable Share QR Code";
+        img.style.width = "180px";
+        img.style.height = "180px";
+        img.style.display = "block";
+        img.style.margin = "0 auto";
+        container.appendChild(img);
     }
 
     function closeShareModal() {
         const modalOverlay = document.getElementById("share-modal-overlay");
-        if (modalOverlay) modalOverlay.style.display = "none";
+        if (modalOverlay) {
+            modalOverlay.style.display = "none";
+            modalOverlay.style.position = "";
+        }
+        // Restore body scroll
+        document.body.style.overflow = "";
     }
 
     // --- PUBLIC RECIPIENT SHARE VIEW HANDLER ---
@@ -564,7 +607,6 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
         const previewContainer = document.getElementById("public-preview-container");
         previewContainer.innerHTML = "";
 
-        // Render preview based on file category or mime type
         const isImg = file.category === 'images' || (file.type && file.type.startsWith('image/'));
         const isVid = file.category === 'videos' || (file.type && file.type.startsWith('video/'));
 
@@ -620,7 +662,7 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
     }
 
-    // Expose helper to save file directly from other tools (like Image Studio)
+    // Expose helpers
     window.saveToEnlyCloudVault = saveFileToDB;
     window.openEnlyCloudShareModal = openShareModal;
 
