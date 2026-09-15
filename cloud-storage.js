@@ -524,6 +524,25 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
         filenameEl.textContent = file.name;
 
+        // Guarantee Firestore sync for cross-device QR scanning
+        if (configured && db && file) {
+            try {
+                const docRef = doc(db, "cloud_shares", file.id);
+                setDoc(docRef, {
+                    id: file.id,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    category: file.category,
+                    dataUrl: file.dataUrl,
+                    createdAt: file.createdAt,
+                    downloads: file.downloads || 0
+                }, { merge: true }).catch(err => console.warn("Share modal Firestore sync:", err));
+            } catch (e) {
+                console.warn("Share modal Firestore sync error:", e);
+            }
+        }
+
         // Generate Share URL (points to cloud-storage.html?file=ID)
         let basePath = window.location.pathname;
         if (!basePath.includes("cloud-storage.html")) {
@@ -584,41 +603,117 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
         const publicView = document.getElementById("public-share-view");
         const storageView = document.getElementById("storage-workspace-view");
+        const previewContainer = document.getElementById("public-preview-container");
+        const titleEl = document.getElementById("public-file-title");
+        const metaEl = document.getElementById("public-file-meta");
 
         if (!publicView || !storageView) return;
 
-        const file = await getFileByIdFromDB(fileId);
+        // Show public view immediately with a loading spinner
+        storageView.style.display = "none";
+        publicView.style.display = "block";
+        if (titleEl) titleEl.textContent = "Loading shared file...";
+        if (metaEl) metaEl.textContent = "Please wait while the file is retrieved.";
+        if (previewContainer) {
+            previewContainer.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px 20px;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                    <p style="color:var(--text-secondary);font-size:14px;font-weight:600;">Fetching file from cloud...</p>
+                </div>`;
+        }
 
+        // Strategy: on recipient device, local DB is empty — go straight to Firestore
+        let file = null;
+
+        // 1. Try local DB first (works if sender opens their own link on same device)
+        file = storedFiles.find(f => f.id === fileId) || null;
+        if (!file && dbInstance) {
+            file = await new Promise((res) => {
+                try {
+                    const tx = dbInstance.transaction(STORE_NAME, "readonly");
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get(fileId);
+                    req.onsuccess = () => res(req.result || null);
+                    req.onerror = () => res(null);
+                } catch(e) { res(null); }
+            });
+        }
+
+        // 2. Firestore — the ONLY cross-device source (recipient mobile)
+        if (!file && configured && db) {
+            try {
+                const { doc: fsDoc, getDoc: fsGetDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const docRef = fsDoc(db, "cloud_shares", fileId);
+                const snap = await fsGetDoc(docRef);
+                if (snap.exists()) file = snap.data();
+            } catch (e) {
+                console.warn("Firestore cross-device fetch error:", e);
+            }
+        }
+
+        // 3. LocalStorage cache fallback
         if (!file) {
-            publicView.style.display = "block";
-            storageView.style.display = "none";
-            document.getElementById("public-file-title").textContent = "Shared File Not Found";
-            document.getElementById("public-file-meta").textContent = "The requested cloud document may have been deleted or expired.";
-            document.getElementById("public-preview-container").innerHTML = `<p style="color: var(--danger);">Unable to locate document in cloud storage vault.</p>`;
+            const cached = localStorage.getItem(`enly_shared_file_${fileId}`);
+            if (cached) { try { file = JSON.parse(cached); } catch(e) {} }
+        }
+
+        // --- Render result ---
+        if (!file) {
+            if (titleEl) titleEl.textContent = "Shared File Not Found";
+            if (metaEl) metaEl.textContent = "The requested file may have been deleted or expired.";
+            if (previewContainer) previewContainer.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5" style="margin-bottom:12px;">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p style="color:var(--danger);font-weight:700;margin-bottom:6px;">File unavailable</p>
+                    <p style="color:var(--text-secondary);font-size:13px;">The shared file could not be found in the cloud. It may have been removed by the sender.</p>
+                </div>`;
             return;
         }
 
-        storageView.style.display = "none";
-        publicView.style.display = "block";
+        // Render the file info
+        if (titleEl) titleEl.textContent = file.name;
+        if (metaEl) metaEl.textContent = `Size: ${formatBytes(file.size)} • Shared on ${new Date(file.createdAt).toLocaleDateString()}`;
 
-        document.getElementById("public-file-title").textContent = file.name;
-        document.getElementById("public-file-meta").textContent = `Size: ${formatBytes(file.size)} • Uploaded ${new Date(file.createdAt).toLocaleDateString()}`;
+        // Render the preview
+        if (previewContainer) {
+            previewContainer.innerHTML = "";
+            const isImg = file.category === "images" || (file.type && file.type.startsWith("image/"));
+            const isVid = file.category === "videos" || (file.type && file.type.startsWith("video/"));
 
-        const previewContainer = document.getElementById("public-preview-container");
-        previewContainer.innerHTML = "";
-
-        const isImg = file.category === 'images' || (file.type && file.type.startsWith('image/'));
-        const isVid = file.category === 'videos' || (file.type && file.type.startsWith('video/'));
-
-        if (isImg) {
-            previewContainer.innerHTML = `<img src="${file.dataUrl}" alt="${file.name}" style="max-width: 100%; max-height: 440px; border-radius: 8px; object-fit: contain;">`;
-        } else if (isVid) {
-            previewContainer.innerHTML = `<video src="${file.dataUrl}" controls autoplay style="max-width: 100%; max-height: 400px; border-radius: 8px;"></video>`;
-        } else if (file.category === 'docx') {
-            previewContainer.innerHTML = `<div id="docx-html-preview" style="width: 100%; background: #ffffff; padding: 20px; border-radius: 8px; font-family: serif; color: #000; text-align: left; overflow-y: auto;">Loading DOCX document preview...</div>`;
-            renderDocxHTML(file.dataUrl);
-        } else {
-            previewContainer.innerHTML = `<div style="text-align: center; padding: 20px;"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg><p style="margin-top: 10px; font-weight: 600;">Document Ready for Download</p></div>`;
+            if (isImg && file.dataUrl) {
+                const img = document.createElement("img");
+                img.src = file.dataUrl;
+                img.alt = file.name;
+                img.style.cssText = "max-width:100%;max-height:480px;border-radius:12px;object-fit:contain;display:block;margin:0 auto;";
+                img.onerror = () => {
+                    previewContainer.innerHTML = `<p style="color:var(--text-secondary);text-align:center;padding:20px;">Preview unavailable — tap Download to save the file.</p>`;
+                };
+                previewContainer.appendChild(img);
+            } else if (isVid && file.dataUrl) {
+                const vid = document.createElement("video");
+                vid.src = file.dataUrl;
+                vid.controls = true;
+                vid.playsInline = true;
+                vid.style.cssText = "max-width:100%;max-height:420px;border-radius:12px;display:block;margin:0 auto;";
+                previewContainer.appendChild(vid);
+            } else if (file.category === "docx") {
+                previewContainer.innerHTML = `<div id="docx-html-preview" style="width:100%;background:#fff;padding:20px;border-radius:8px;font-family:serif;color:#000;text-align:left;overflow-y:auto;max-height:420px;">Loading document preview...</div>`;
+                renderDocxHTML(file.dataUrl);
+            } else {
+                previewContainer.innerHTML = `
+                    <div style="text-align:center;padding:30px 20px;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:12px;">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <p style="font-weight:700;font-size:16px;margin-bottom:4px;">${file.name}</p>
+                        <p style="color:var(--text-secondary);font-size:13px;">Tap Download below to save this file.</p>
+                    </div>`;
+            }
         }
 
         const btnPublicDownload = document.getElementById("btn-public-download");
