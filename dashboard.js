@@ -844,3 +844,415 @@ async function setupMobileVisibilityToggles() {
     bindToggleListener(badgeToggle, badgeLabel, "badgeMobileVisible", "Event Badge is now");
     bindToggleListener(aboutToggle, aboutLabel, "aboutMobileVisible", "About page is now");
 }
+
+// ─── CLOUD STORAGE STAT CARD + VAULT PREVIEW DRAWER ─────────────────────────
+
+let _cloudFiles = [];       // cache fetched from Firestore
+let _cvdFilter  = "all";    // active filter in drawer
+
+/** Fetch cloud_shares from Firestore and populate the stat card. */
+async function loadCloudStorageStats() {
+    if (!configured || !db) {
+        const el = document.getElementById("stat-cloud-files");
+        const sz = document.getElementById("stat-cloud-size");
+        if (el) el.innerText = "N/A";
+        if (sz) sz.innerText = "Firebase not configured";
+        return;
+    }
+    try {
+        const { collection: fsCol, getDocs: fsGet } = await import(
+            "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+        );
+        const snap = await fsGet(fsCol(db, "cloud_shares"));
+        _cloudFiles = [];
+        let totalBytes = 0;
+        snap.forEach(d => {
+            const data = d.data();
+            _cloudFiles.push(data);
+            totalBytes += data.size || 0;
+        });
+
+        const count = _cloudFiles.length;
+        const usedMB = (totalBytes / (1024 * 1024)).toFixed(1);
+
+        const el = document.getElementById("stat-cloud-files");
+        const sz = document.getElementById("stat-cloud-size");
+        if (el) el.innerText = count.toLocaleString();
+        if (sz) sz.innerText = `${usedMB} MB used`;
+    } catch (e) {
+        console.warn("Cloud storage stat fetch error:", e);
+        const el = document.getElementById("stat-cloud-files");
+        if (el) el.innerText = "–";
+    }
+}
+
+// Call on dashboard init
+document.addEventListener("DOMContentLoaded", () => {
+    loadCloudStorageStats();
+});
+
+/** Open the slide-up vault preview drawer. */
+window.openCloudVaultDrawer = async function () {
+    const overlay = document.getElementById("cloud-vault-drawer-overlay");
+    const drawer  = document.getElementById("cloud-vault-drawer");
+    if (!overlay || !drawer) return;
+
+    overlay.style.display = "flex";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        drawer.style.transform = "translateY(0)";
+    }));
+    document.body.style.overflow = "hidden";
+
+    // Refresh files if cache is empty
+    if (_cloudFiles.length === 0) await loadCloudStorageStats();
+
+    _cvdFilter = "all";
+    // Reset filter tab active state
+    ["all","images","docx","videos"].forEach(f => {
+        document.getElementById(`cvd-filter-${f}`)?.classList.toggle("active", f === "all");
+    });
+
+    renderCloudDrawerGrid();
+};
+
+/** Close the slide-up vault preview drawer. */
+window.closeCloudVaultDrawer = function () {
+    const overlay = document.getElementById("cloud-vault-drawer-overlay");
+    const drawer  = document.getElementById("cloud-vault-drawer");
+    if (!drawer) return;
+    drawer.style.transform = "translateY(100%)";
+    setTimeout(() => {
+        if (overlay) overlay.style.display = "none";
+        document.body.style.overflow = "";
+    }, 360);
+};
+
+/** Filter cloud drawer by category. */
+window.filterCloudDrawer = function (cat) {
+    _cvdFilter = cat;
+    ["all","images","docx","videos"].forEach(f => {
+        document.getElementById(`cvd-filter-${f}`)?.classList.toggle("active", f === cat);
+    });
+    renderCloudDrawerGrid();
+};
+
+function formatBytesLocal(bytes) {
+    if (!bytes || bytes === 0) return "0 B";
+    const k = 1024, sizes = ["B","KB","MB","GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+function renderCloudDrawerGrid() {
+    const grid   = document.getElementById("cloud-drawer-grid");
+    const empty  = document.getElementById("cloud-drawer-empty");
+    const meta   = document.getElementById("cloud-drawer-meta");
+    if (!grid) return;
+
+    const list = _cvdFilter === "all"
+        ? _cloudFiles
+        : _cloudFiles.filter(f => f.category === _cvdFilter);
+
+    const totalBytes = _cloudFiles.reduce((a, f) => a + (f.size || 0), 0);
+    if (meta) meta.textContent = `${_cloudFiles.length} file${_cloudFiles.length !== 1 ? "s" : ""} • ${formatBytesLocal(totalBytes)} used`;
+
+    if (list.length === 0) {
+        grid.style.display = "none";
+        if (empty) { empty.style.display = "flex"; }
+        return;
+    }
+    grid.style.display = "grid";
+    if (empty) empty.style.display = "none";
+    grid.innerHTML = "";
+
+    list.forEach(file => {
+        const card = document.createElement("div");
+        card.style.cssText = "background:var(--bg-tertiary);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border:1px solid var(--card-border);";
+        card.title = "Tap to preview";
+
+        card.addEventListener("mouseenter", () => { card.style.transform = "translateY(-3px)"; card.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)"; });
+        card.addEventListener("mouseleave", () => { card.style.transform = ""; card.style.boxShadow = ""; });
+
+        // Thumbnail
+        let thumbHtml = "";
+        if (file.dataUrl && (file.category === "images" || (file.type && file.type.startsWith("image/")))) {
+            thumbHtml = `<img src="${file.dataUrl}" alt="${file.name}" style="width:100%;height:110px;object-fit:cover;display:block;">`;
+        } else if (file.category === "videos" || (file.type && file.type.startsWith("video/"))) {
+            thumbHtml = `<div style="width:100%;height:110px;background:rgba(99,102,241,0.08);display:flex;align-items:center;justify-content:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`;
+        } else if (file.category === "docx") {
+            thumbHtml = `<div style="width:100%;height:110px;background:rgba(29,78,216,0.06);display:flex;align-items:center;justify-content:center;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="1.8"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg></div>`;
+        } else {
+            thumbHtml = `<div style="width:100%;height:110px;background:rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>`;
+        }
+
+        card.innerHTML = `
+            ${thumbHtml}
+            <div style="padding:8px 10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${file.name}">${file.name}</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${formatBytesLocal(file.size)} • ${file.category}</div>
+            </div>`;
+
+        card.addEventListener("click", () => openCvdPreview(file));
+        grid.appendChild(card);
+    });
+}
+
+let _cvdActiveFile = null;
+
+/** Open full preview modal for a cloud file. */
+window.openCvdPreview = function (file) {
+    _cvdActiveFile = file;
+    const overlay  = document.getElementById("cvd-preview-overlay");
+    const title    = document.getElementById("cvd-preview-title");
+    const metaEl   = document.getElementById("cvd-preview-meta");
+    const body     = document.getElementById("cvd-preview-body");
+    const shareLink= document.getElementById("cvd-open-share-link");
+    const dlBtn    = document.getElementById("cvd-download-btn");
+
+    if (!overlay || !body) return;
+
+    overlay.style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    if (title) title.textContent = file.name;
+    if (metaEl) metaEl.textContent = `${formatBytesLocal(file.size)} • ${file.type || file.category} • Uploaded ${new Date(file.createdAt).toLocaleDateString()}`;
+
+    // Share link
+    const shareUrl = `${window.location.origin}/cloud-storage.html?file=${file.id}`;
+    if (shareLink) shareLink.href = shareUrl;
+
+    // Download button
+    if (dlBtn) {
+        dlBtn.onclick = () => {
+            if (!file.dataUrl) return alert("Binary not stored in Firestore for this file.");
+            const a = document.createElement("a");
+            a.href = file.dataUrl;
+            a.download = file.name;
+            a.click();
+        };
+    }
+
+    // Render preview
+    body.innerHTML = "";
+    const isImg = file.category === "images" || (file.type && file.type.startsWith("image/"));
+    const isVid = file.category === "videos" || (file.type && file.type.startsWith("video/"));
+
+    if (isImg && file.dataUrl) {
+        const img = document.createElement("img");
+        img.src = file.dataUrl;
+        img.alt = file.name;
+        img.style.cssText = "max-width:100%;max-height:55vh;border-radius:10px;object-fit:contain;display:block;margin:0 auto;";
+        body.appendChild(img);
+    } else if (isVid && file.dataUrl) {
+        const vid = document.createElement("video");
+        vid.src = file.dataUrl;
+        vid.controls = true;
+        vid.playsInline = true;
+        vid.style.cssText = "max-width:100%;max-height:55vh;border-radius:10px;display:block;margin:0 auto;";
+        body.appendChild(vid);
+    } else if (file.category === "docx" && file.dataUrl) {
+        body.innerHTML = `<div id="cvd-docx-html" style="width:100%;background:#fff;padding:20px;border-radius:8px;font-family:serif;color:#111;text-align:left;overflow-y:auto;max-height:50vh;">Loading document...</div>`;
+        if (window.mammoth) {
+            const base64 = file.dataUrl.split(",")[1];
+            const bytes  = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+            mammoth.convertToHtml({ arrayBuffer: bytes.buffer })
+                .then(r => { document.getElementById("cvd-docx-html").innerHTML = r.value || "<p>Document loaded.</p>"; })
+                .catch(() => { document.getElementById("cvd-docx-html").innerHTML = "<p>Preview unavailable.</p>"; });
+        } else {
+            document.getElementById("cvd-docx-html").innerHTML = "<p>DOCX preview library not loaded.</p>";
+        }
+    } else {
+        body.innerHTML = `<div style="text-align:center;padding:32px 20px;">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:12px;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            <p style="font-weight:700;font-size:15px;margin-bottom:4px;">${file.name}</p>
+            <p style="color:var(--text-secondary);font-size:13px;">${file.dataUrl ? "Preview not available for this file type." : "Binary not available in Firestore — file was too large to sync."}</p>
+        </div>`;
+    }
+};
+
+/** Close the full preview modal. */
+window.closeCvdPreview = function () {
+    const overlay = document.getElementById("cvd-preview-overlay");
+    if (overlay) overlay.style.display = "none";
+    document.body.style.overflow = "";
+    // Pause any playing video
+    const vid = document.querySelector("#cvd-preview-body video");
+    if (vid) vid.pause();
+};
+
+// ─── QR CODE HISTORY DRAWER ──────────────────────────────────────────────────
+
+/**
+ * Fetch up to `limitCount` docs from a Firestore history collection,
+ * ordered by createdAt descending. Uses the already-initialised `db` from
+ * the top-level dashboard.js import. Rejects if db is not available.
+ */
+async function _fetchHistoryFromFirestore(collectionName, limitCount = 100) {
+    if (!configured || !db) throw new Error("Firebase not configured");
+    const { collection: fsCol, getDocs: fsGet, query: fsQuery,
+            orderBy: fsOrderBy, limit: fsLimit } =
+        await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+    const q = fsQuery(
+        fsCol(db, collectionName),
+        fsOrderBy("createdAt", "desc"),
+        fsLimit(limitCount)
+    );
+    const snap = await fsGet(q);
+    const items = [];
+    snap.forEach(d => items.push(d.data()));
+    return items;
+}
+
+
+function _openDrawer(overlayId, drawerId) {
+    const overlay = document.getElementById(overlayId);
+    const drawer  = document.getElementById(drawerId);
+    if (!overlay || !drawer) return;
+    overlay.style.display = "flex";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        drawer.style.transform = "translateY(0)";
+    }));
+    document.body.style.overflow = "hidden";
+}
+
+function _closeDrawer(overlayId, drawerId) {
+    const overlay = document.getElementById(overlayId);
+    const drawer  = document.getElementById(drawerId);
+    if (!drawer) return;
+    drawer.style.transform = "translateY(100%)";
+    setTimeout(() => {
+        if (overlay) overlay.style.display = "none";
+        document.body.style.overflow = "";
+    }, 360);
+}
+
+window.openQrHistoryDrawer = function () {
+    _openDrawer("qr-history-drawer-overlay", "qr-history-drawer");
+    renderQrHistoryGrid();
+};
+window.closeQrHistoryDrawer = function () {
+    _closeDrawer("qr-history-drawer-overlay", "qr-history-drawer");
+};
+
+function renderQrHistoryGrid() {
+    const grid  = document.getElementById("qr-history-grid");
+    const empty = document.getElementById("qr-history-empty");
+    const meta  = document.getElementById("qr-drawer-meta");
+    if (!grid) return;
+
+    // Show spinner while loading
+    grid.style.display = "grid";
+    if (empty) empty.style.display = "none";
+    grid.innerHTML = `<div style="grid-column:1/-1;display:flex;justify-content:center;padding:40px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>`;
+
+    _fetchHistoryFromFirestore('qr_history', 100)
+        .then(items => _renderQrGrid(items, grid, empty, meta))
+        .catch(() => {
+            // Fallback to localStorage if Firestore fails / not configured
+            const items = JSON.parse(localStorage.getItem("enly_qr_history") || "[]");
+            _renderQrGrid(items, grid, empty, meta);
+        });
+}
+
+function _renderQrGrid(items, grid, empty, meta) {
+    if (meta) meta.textContent = `${items.length} QR code${items.length !== 1 ? "s" : ""} generated`;
+
+    if (items.length === 0) {
+        grid.style.display = "none";
+        if (empty) empty.style.display = "flex";
+        return;
+    }
+    grid.style.display = "grid";
+    if (empty) empty.style.display = "none";
+    grid.innerHTML = "";
+
+    items.forEach(item => {
+        const card = document.createElement("div");
+        card.style.cssText = "background:var(--bg-tertiary);border-radius:14px;overflow:hidden;border:1px solid var(--card-border);transition:transform 0.15s,box-shadow 0.15s;";
+        card.addEventListener("mouseenter", () => { card.style.transform = "translateY(-3px)"; card.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)"; });
+        card.addEventListener("mouseleave", () => { card.style.transform = ""; card.style.boxShadow = ""; });
+
+        const thumbHtml = item.thumbDataUrl
+            ? `<img src="${item.thumbDataUrl}" alt="QR Preview" style="width:100%;height:110px;object-fit:contain;display:block;background:#fff;padding:8px;box-sizing:border-box;">`
+            : `<div style="width:100%;height:110px;background:rgba(245,158,11,0.08);display:flex;align-items:center;justify-content:center;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+               </div>`;
+
+        const date = new Date(item.createdAt).toLocaleDateString();
+        const shortText = item.dataText && item.dataText.length > 28 ? item.dataText.slice(0, 25) + "…" : (item.dataText || item.filename);
+
+        card.innerHTML = `
+            ${thumbHtml}
+            <div style="padding:8px 10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${item.dataText || ''}">${shortText}</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${item.format} • ${date}</div>
+            </div>`;
+        grid.appendChild(card);
+    });
+}
+
+// ─── DOC CONVERSION HISTORY DRAWER ───────────────────────────────────────────
+
+window.openDocHistoryDrawer = function () {
+    _openDrawer("doc-history-drawer-overlay", "doc-history-drawer");
+    renderDocHistoryList();
+};
+window.closeDocHistoryDrawer = function () {
+    _closeDrawer("doc-history-drawer-overlay", "doc-history-drawer");
+};
+
+function renderDocHistoryList() {
+    const list  = document.getElementById("doc-history-list");
+    const empty = document.getElementById("doc-history-empty");
+    const meta  = document.getElementById("doc-drawer-meta");
+    if (!list) return;
+
+    // Show spinner while loading
+    list.style.display = "flex";
+    if (empty) empty.style.display = "none";
+    list.innerHTML = `<div style="display:flex;justify-content:center;padding:40px;width:100%;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>`;
+
+    _fetchHistoryFromFirestore('doc_history', 100)
+        .then(items => _renderDocList(items, list, empty, meta))
+        .catch(() => {
+            const items = JSON.parse(localStorage.getItem("enly_doc_history") || "[]");
+            _renderDocList(items, list, empty, meta);
+        });
+}
+
+function _renderDocList(items, list, empty, meta) {
+    if (meta) meta.textContent = `${items.length} conversion${items.length !== 1 ? "s" : ""} recorded`;
+
+    if (items.length === 0) {
+        list.style.display = "none";
+        if (empty) empty.style.display = "flex";
+        return;
+    }
+    list.style.display = "flex";
+    if (empty) empty.style.display = "none";
+    list.innerHTML = "";
+
+    items.forEach(item => {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg-tertiary);border-radius:12px;border:1px solid var(--card-border);transition:background 0.15s;";
+        row.addEventListener("mouseenter", () => { row.style.background = "rgba(16,185,129,0.06)"; });
+        row.addEventListener("mouseleave", () => { row.style.background = "var(--bg-tertiary)"; });
+
+        const date = new Date(item.createdAt).toLocaleString();
+        const baseName = item.name.replace(/\.[^.]+$/, "");
+
+        row.innerHTML = `
+            <div style="width:40px;height:40px;background:rgba(16,185,129,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${item.name}">${baseName}</div>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${item.inputExt} → ${item.targetExt}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:10px;font-weight:700;color:#10b981;background:rgba(16,185,129,0.1);padding:3px 8px;border-radius:100px;">${item.targetExt}</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${date}</div>
+            </div>`;
+        list.appendChild(row);
+    });
+}

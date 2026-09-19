@@ -383,6 +383,48 @@ document.addEventListener('DOMContentLoaded', () => {
             // Record analytics event for doc conversions
             recordDocConversion(uploadedFiles.length);
 
+            // Save history entries for dashboard preview drawer
+            try {
+                const docHistoryKey = 'enly_doc_history';
+                const existing = JSON.parse(localStorage.getItem(docHistoryKey) || '[]');
+                const newEntries = [];
+
+                uploadedFiles.forEach(itemObj => {
+                    if (itemObj.status === 'done') {
+                        const entry = {
+                            id: 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                            name: itemObj.name,
+                            inputExt: itemObj.inputExt?.toUpperCase() || '?',
+                            targetExt: itemObj.targetExt?.toUpperCase() || '?',
+                            createdAt: new Date().toISOString()
+                        };
+                        existing.unshift(entry);
+                        newEntries.push(entry);
+                    }
+                });
+
+                // --- localStorage cache ---
+                localStorage.setItem(docHistoryKey, JSON.stringify(existing.slice(0, 100)));
+
+                // --- Firestore (cross-device, readable by admin dashboard) ---
+                try {
+                    const fbApp = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+                    const fbDb  = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+                    const apps  = fbApp.getApps();
+                    const app   = apps.length ? fbApp.getApp() : null;
+                    if (app) {
+                        const db = fbDb.getFirestore(app);
+                        await Promise.all(newEntries.map(entry => {
+                            const ref = fbDb.doc(db, 'doc_history', entry.id);
+                            return fbDb.setDoc(ref, entry);
+                        }));
+                    }
+                } catch (fbErr) {
+                    console.warn('Doc Firestore sync skipped:', fbErr);
+                }
+
+            } catch (_) {}
+
             // Render outputs in preview area
             renderOutputsPreview();
 

@@ -1267,12 +1267,56 @@
 
                 showToast("Download started successfully!", "success");
 
-                // Record live analytics stat
+                // Record live analytics stat + save history entry for dashboard preview
                 try {
                     const current = parseInt(localStorage.getItem('enly_stats_qr_generated') || '28', 10);
                     const updated = current + 1;
                     localStorage.setItem('enly_stats_qr_generated', updated.toString());
                     window.dispatchEvent(new CustomEvent('enly_stats_updated', { detail: { qrGenerated: updated } }));
+
+                    // Capture thumbnail from the live preview canvas
+                    let thumbDataUrl = null;
+                    try {
+                        const previewCanvas = document.querySelector('#qr-preview-canvas canvas');
+                        if (previewCanvas) {
+                            const thumbCanvas = document.createElement('canvas');
+                            thumbCanvas.width = 160; thumbCanvas.height = 160;
+                            thumbCanvas.getContext('2d').drawImage(previewCanvas, 0, 0, 160, 160);
+                            thumbDataUrl = thumbCanvas.toDataURL('image/png');
+                        }
+                    } catch (_) {}
+
+                    const entry = {
+                        id: 'qr_' + Date.now(),
+                        dataText: document.getElementById('qr-data-input')?.value?.trim() || '',
+                        filename: filename + '.' + format,
+                        format: format.toUpperCase(),
+                        thumbDataUrl,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // --- localStorage cache (same-device fallback) ---
+                    const historyKey = 'enly_qr_history';
+                    const existing = JSON.parse(localStorage.getItem(historyKey) || '[]');
+                    existing.unshift(entry);
+                    localStorage.setItem(historyKey, JSON.stringify(existing.slice(0, 50)));
+
+                    // --- Firestore (cross-device, readable by admin dashboard) ---
+                    try {
+                        const fbApp  = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+                        const fbDb   = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+                        const apps   = fbApp.getApps();
+                        const app    = apps.length ? fbApp.getApp() : null;
+                        // Only write if Firebase is already initialised (firebase.js must have loaded first)
+                        if (app) {
+                            const db  = fbDb.getFirestore(app);
+                            const ref = fbDb.doc(db, 'qr_history', entry.id);
+                            await fbDb.setDoc(ref, entry);
+                        }
+                    } catch (fbErr) {
+                        console.warn('QR Firestore sync skipped:', fbErr);
+                    }
+
                 } catch (e) {
                     console.error("Error updating QR stats:", e);
                 }
