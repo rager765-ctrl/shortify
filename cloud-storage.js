@@ -72,8 +72,18 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             console.warn("LocalStorage quota notice:", e);
         }
 
-        // 3. Sync to Firebase Firestore if configured
+        // 3. Sync to Firebase Firestore if configured.
+        // Firestore has a 1 MB per-document hard limit.
+        // Images are already compressed to ~700 KB max in processUploadedFiles.
+        // For other binary types (video/PDF/DOCX) that can be very large, we
+        // store only metadata (no dataUrl) so the write never fails; recipients
+        // will see a clear "download from sender" message rather than "not found".
         if (configured && db) {
+            const FIRESTORE_SAFE_BYTES = 700_000; // ~700 KB leaves headroom
+            const dataUrlToStore = (fileRecord.dataUrl && fileRecord.dataUrl.length <= FIRESTORE_SAFE_BYTES)
+                ? fileRecord.dataUrl
+                : null; // too large — omit binary; store metadata only
+
             try {
                 const docRef = doc(db, "cloud_shares", fileRecord.id);
                 await setDoc(docRef, {
@@ -82,9 +92,10 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
                     size: fileRecord.size,
                     type: fileRecord.type,
                     category: fileRecord.category,
-                    dataUrl: fileRecord.dataUrl,
+                    dataUrl: dataUrlToStore,
                     createdAt: fileRecord.createdAt,
-                    downloads: 0
+                    downloads: 0,
+                    hasFullData: dataUrlToStore !== null
                 });
             } catch (e) {
                 console.warn("Firebase Cloud Sync Notice:", e);
@@ -217,13 +228,19 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
 
             const category = getFileCategory(file.name, file.type);
             const id = "fl_" + Math.random().toString(36).substring(2, 10);
-            const dataUrl = await readFileAsDataURL(file);
+            const rawDataUrl = await readFileAsDataURL(file);
+
+            // Compress images so they always fit within Firestore's 1 MB limit,
+            // enabling reliable cross-device sharing via QR / link.
+            const dataUrl = (category === "images")
+                ? await compressImageDataUrl(rawDataUrl)
+                : rawDataUrl;
 
             const fileRecord = {
                 id: id,
                 name: file.name,
                 size: file.size,
-                type: file.type || "application/octet-stream",
+                type: (category === "images") ? "image/jpeg" : (file.type || "application/octet-stream"),
                 category: category,
                 dataUrl: dataUrl,
                 createdAt: new Date().toISOString(),
@@ -251,6 +268,47 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
             reader.readAsDataURL(file);
+        });
+    }
+
+    /**
+     * Compress an image dataUrl so it fits well within Firestore's 1MB document
+     * size limit. Downscales to at most maxDim pixels on the longer edge and
+     * re-encodes as JPEG at the given quality. Non-image dataUrls are returned
+     * unchanged.
+     */
+    function compressImageDataUrl(dataUrl, maxDim = 1280, quality = 0.78) {
+        return new Promise((resolve) => {
+            if (!dataUrl || !dataUrl.startsWith("data:image/")) {
+                return resolve(dataUrl); // non-image – skip
+            }
+            const img = new Image();
+            img.onload = () => {
+                let { width, height } = img;
+                if (width <= maxDim && height <= maxDim && dataUrl.length < 700_000) {
+                    return resolve(dataUrl); // already small enough
+                }
+                if (width > height) {
+                    if (width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+                } else {
+                    if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+                // Keep reducing quality until the output is small enough
+                let q = quality;
+                let compressed = canvas.toDataURL("image/jpeg", q);
+                while (compressed.length > 700_000 && q > 0.3) {
+                    q = Math.round((q - 0.1) * 10) / 10;
+                    compressed = canvas.toDataURL("image/jpeg", q);
+                }
+                resolve(compressed);
+            };
+            img.onerror = () => resolve(dataUrl); // fallback – use original
+            img.src = dataUrl;
         });
     }
 
@@ -838,6 +896,23 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/f
                     <p style="color:var(--danger);font-weight:700;margin-bottom:6px;">File unavailable</p>
                     <p style="color:var(--text-secondary);font-size:13px;">The shared file could not be found in the cloud. It may have been removed by the sender.</p>
                 </div>`;
+            return;
+        }
+
+        // File exists in Firestore but binary was too large to store there
+        if (file && !file.dataUrl && file.hasFullData === false) {
+            if (titleEl) titleEl.textContent = file.name || "Shared File";
+            if (metaEl) metaEl.textContent = `Size: ${formatBytes(file.size || 0)} • Shared on ${new Date(file.createdAt).toLocaleDateString()}`;
+            if (previewContainer) previewContainer.innerHTML = `
+                <div style="text-align:center;padding:40px 20px;">
+                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:12px;">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                        <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    <p style="font-weight:700;font-size:16px;margin-bottom:6px;color:var(--text-primary);">${file.name}</p>
+                    <p style="color:var(--text-secondary);font-size:13px;">This file is too large to preview cross-device. Ask the sender to share it directly or re-upload a compressed version.</p>
+                </div>`;
+            document.getElementById("btn-public-download")?.setAttribute("disabled", "true");
             return;
         }
 
